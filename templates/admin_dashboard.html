@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Панель администратора{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Панель администратора</h2>
+
+<!-- Кнопки отчетов -->
+<div class="report-controls">
+    <h3>Отчеты по бронированиям</h3>
+    <div class="report-buttons">
+        <a href="/admin/report/word" class="btn outline">
+            📄 Отчет по брони в Word
+        </a>
+        <a href="/admin/report/excel" class="btn outline">
+            📊 Отчет по брони в Excel
+        </a>
+        <a href="/admin/report/pdf" class="btn outline">
+            📑 Отчет по брони в PDF
+        </a>
+    </div>
+    <p class="report-info">Отчеты содержат данные о всех бронированиях с информацией о пользователях, квестах и общей выручке.</p>
+</div>
+
+    {% if error %}
+    <div class="alert error">
+        {{ error }}
+
+        {% if blocked_quest_id and quest_bookings %}
+        <div style="margin-top: 15px; padding: 15px; background: #2a1a1a; border-radius: 6px;">
+            <strong>Активные бронирования для этого квеста:</strong>
+            <div style="margin-top: 10px;">
+                {% for booking in quest_bookings %}
+                <div style="padding: 8px; margin: 5px 0; background: #3a2a2a; border-radius: 4px;">
+                    📅 {{ booking.date_time }} - {{ booking.user.username }}
+                    {% if booking.user.email %}({{ booking.user.email }}){% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}"
+                      onsubmit="return confirm('Вы уверены, что хотите удалить ВСЕ бронирования этого квеста?')">
+                    <button type="submit" class="btn danger small">Удалить все бронирования</button>
+                </form>
+
+                <form method="post" action="/admin/delete-quest-with-bookings/{{ blocked_quest_id }}"
+                      onsubmit="return confirm('ВНИМАНИЕ: Это удалит квест и ВСЕ его бронирования. Продолжить?')">
+                    <button type="submit" class="btn danger small">Удалить квест и бронирования</button>
+                </form>
+
+                <a href="/admin/bookings?quest_id={{ blocked_quest_id }}" class="btn outline small">
+                    Управление бронированиями
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="admin-controls">
+        <a href="/admin/add" class="btn">Добавить квест</a>
+        <a href="/admin/bookings" class="btn outline">Управление бронированиями</a>
+    </div>
+
+    {% if error %}
+    <div class="alert error">
+        {{ error }}
+
+        {% if blocked_quest_id and quest_bookings %}
+        <div style="margin-top: 15px; padding: 15px; background: #2a1a1a; border-radius: 6px;">
+            <strong>Активные бронирования для этого квеста:</strong>
+            <div style="margin-top: 10px;">
+                {% for booking in quest_bookings %}
+                <div style="padding: 8px; margin: 5px 0; background: #3a2a2a; border-radius: 4px;">
+                    📅 {{ booking.date_time }} - {{ booking.user.username }}
+                    {% if booking.user.email %}({{ booking.user.email }}){% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}"
+                      onsubmit="return confirm('Вы уверены, что хотите удалить ВСЕ бронирования этого квеста?')">
+                    <button type="submit" class="btn danger small">Удалить все бронирования</button>
+                </form>
+
+                <form method="post" action="/admin/delete-quest-with-bookings/{{ blocked_quest_id }}"
+                      onsubmit="return confirm('ВНИМАНИЕ: Это удалит квест и ВСЕ его бронирования. Продолжить?')">
+                    <button type="submit" class="btn danger small">Удалить квест и бронирования</button>
+                </form>
+
+                <a href="/admin/bookings?quest_id={{ blocked_quest_id }}" class="btn outline small">
+                    Управление бронированиями
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="admin-list">
+        {% for q in quests %}
+        <div class="admin-item {% if blocked_quest_id == q.id %}highlighted{% endif %}">
+            <div class="thumb">
+                {% if q.image_path %}
+                <img src="/static/{{ q.image_path }}" alt="{{ q.title }}">
+                {% else %}
+                <div class="card-placeholder small"></div>
+                {% endif %}
+            </div>
+            <div class="info">
+                <h4>{{ q.title }}</h4>
+                <p class="meta">{{ q.genre }} • {{ q.difficulty }} • {{ q.min_players }}-{{ q.max_players }} чел.</p>
+                <div class="price-card">
+                    <span class="price">{{ q.price }}₽</span>
+                </div>
+
+                {% set booking_count = namespace(value=0) %}
+                {% for booking in quest_bookings if booking.quest_id == q.id %}
+                    {% set booking_count.value = booking_count.value + 1 %}
+                {% endfor %}
+
+                {% if booking_count.value > 0 %}
+                <div class="booking-badge">
+                    🗓️ {{ booking_count.value }} бронирований
+                </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a class="btn" href="/quest/{{ q.id }}">Просмотр</a>
+                    <a class="btn outline" href="/admin/edit/{{ q.id }}">Редактировать</a>
+                    <form style="display:inline" method="post" action="/admin/delete/{{ q.id }}"
+                          onsubmit="return confirmDelete(this, '{{ q.title }}')">
+                        <button class="btn danger" type="submit">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.report-controls {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 1px solid #39417b;
+}
+
+.report-controls h3 {
+    margin: 0 0 15px 0;
+    color: #e6e9fb;
+    font-size: 1.2em;
+}
+
+.report-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.report-buttons .btn {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.report-info {
+    margin: 15px 0 0 0;
+    color: var(--muted);
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.price-card {
+    background: rgba(70, 80, 245, 0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    border: 1px solid #4650f5;
+    display: inline-block;
+}
+
+.price {
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 1.1em;
+}
+</style>
+
+<script>
+function showWordMessage() {
+    alert('Функция отчета в Word будет реализована позже. Используйте Excel или PDF отчеты.');
+    return false;
+}
+
+async function confirmDelete(form, questTitle) {
+    const questId = form.action.split('/').pop();
+
+    try {
+        const response = await fetch(`/api/quest-has-bookings/${questId}`);
+        const result = await response.json();
+
+        if (result.has_bookings) {
+            const userChoice = confirm(
+                `Квест "${questTitle}" имеет активные бронирования.\n\n` +
+                `• Нажмите OK для просмотра подробностей и управления бронированиями\n` +
+                `• Нажмите Отмена для отмены удаления`
+            );
+
+            if (userChoice) {
+                window.location.href = `/admin#quest-${questId}`;
+            }
+            return false;
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке бронирований:', error);
+    }
+
+    return confirm(`Вы уверены, что хотите удалить квест "${questTitle}"?`);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const questId = urlParams.get('highlight');
+
+    if (questId) {
+        const element = document.getElementById(`quest-${questId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Добавить квест{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Добавить квест</h2>
+  
+  <form action="/admin/add" method="post" enctype="multipart/form-data" class="admin-form">
+    <label>Название<br><input type="text" name="title" required></label>
+
+    <label>Описание<br><textarea name="description" rows="4"></textarea></label>
+
+    <label>Жанр<br>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="genres" value="детям"> Детям</label><br>
+        <label><input type="checkbox" name="genres" value="страшные"> Страшные</label><br>
+        <label><input type="checkbox" name="genres" value="веселые"> Весёлые</label><br>
+        <label><input type="checkbox" name="genres" value="с актерами"> С актёрами</label><br>
+        <label><input type="checkbox" name="genres" value="без актеров"> Без актёров</label><br>
+        <label><input type="checkbox" name="genres" value="нестрашные"> Нестрашные</label><br>
+        <label><input type="checkbox" name="genres" value="загадки"> Загадки</label><br>
+      </div>
+    </label>
+
+    <label>Сложность<br>
+      <select name="difficulty" required>
+        <option value="">Выберите сложность</option>
+        <option value="легкий">Лёгкий</option>
+        <option value="нормальный">Нормальный</option>
+        <option value="сложный">Сложный</option>
+        <option value="экстремальный">Экстремальный</option>
+      </select>
+    </label>
+
+    <label>Уровень страха (1-5)<br>
+      <input type="number" name="fear_level" min="1" max="5" value="1" required>
+    </label>
+
+    <label>Максимальное количество игроков<br>
+      <input type="number" name="players" min="1" max="6" value="4" required>
+    </label>
+
+    <label>Email организатора<br>
+      <input type="email" name="organizer_email" value="alibi@mail.ru" required>
+    </label>
+
+    <label>Цена (руб)<br>
+      <input type="number" name="price" min="0" value="2000" required>
+    </label>
+
+    <label>Изображение квеста<br>
+        <div class="image-upload-container">
+            <input type="file" name="image" id="imageInput" accept="image/*" style="display: none;">
+            <button type="button" class="btn outline" onclick="document.getElementById('imageInput').click()">
+                Выбрать файл
+            </button>
+            <button type="button" class="btn outline" onclick="pasteFromClipboard()">
+                Вставить из буфера обмена
+            </button>
+            <div id="imagePreview" style="margin-top: 10px;"></div>
+            <input type="hidden" name="clipboard_image" id="clipboardImage">
+        </div>
+    </label>
+
+    <button type="submit" class="btn">Добавить квест</button>
+    <a href="/admin" class="btn outline" style="margin-left: 10px;">Отмена</a>
+  </form>
+</div>
+
+<style>
+.admin-form {
+  max-width: 600px;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0 15px 0;
+  border: 1px solid #39417b;
+  border-radius: 8px;
+  background: #0b1330;
+  color: #e6e9fb;
+  box-sizing: border-box;
+}
+
+.admin-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.admin-form button {
+  margin-top: 10px;
+}
+
+.checkbox-group {
+  background: #0b1330;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #39417b;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: normal;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 10px;
+}
+</style>
+
+<script>
+let clipboardImageData = null;
+
+// Обработка выбора файла
+document.getElementById('imageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        previewImage(file);
+    }
+});
+
+// Вставка из буфера обмена
+async function pasteFromClipboard() {
+    try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+            for (const type of item.types) {
+                if (type.startsWith('image/')) {
+                    const blob = await item.getType(type);
+                    previewImage(blob);
+                    break;
+                }
+            }
+        }
+    } catch (err) {
+        // Если Clipboard API не доступен, показываем альтернативный способ
+        alert('Вставка из буфера обмена не поддерживается в этом браузере. Используйте Ctrl+V в поле выбора файла.');
+    }
+}
+
+// Превью изображения
+function previewImage(blob) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('imagePreview');
+        preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; margin-top: 10px;">`;
+
+        // Сохраняем данные изображения для отправки
+        clipboardImageData = e.target.result;
+        document.getElementById('clipboardImage').value = e.target.result;
+    };
+    reader.readAsDataURL(blob);
+}
+
+// Обработка Ctrl+V для вставки изображения
+document.addEventListener('paste', function(e) {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            previewImage(blob);
+            e.preventDefault();
+            break;
+        }
+    }
+});
+</script>
+
+<style>
+.image-upload-container {
+    background: var(--panel);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #39417b;
+}
+
+.image-upload-container .btn {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+</style>
+{% endblock %}

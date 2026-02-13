@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% block title %}Квесты{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+      <div class="logo">
+          <img src="/static/images/logo.png" alt="Квесты" style="height: 40px;">
+      </div>
+      <nav>
+          <span class="site-title">Алиби</span>
+          <a href="/">Все квесты</a>
+          {% if user %}
+              <a href="/my-bookings">Мои бронирования</a>
+          {% endif %}
+      </nav>
+      <div class="search">
+          <form id="search-form" action="/" method="get">
+              <input name="q" placeholder="Поиск..." value="{{ request.query_params.get('q','') }}">
+              <button type="submit" class="search-btn">Найти</button>
+          </form>
+      </div>
+      <div class="user-nav">
+          {% if user %}
+              {% if user.is_admin %}
+                  <span class="admin-badge">Администратор</span>
+                  <a href="/admin">Панель управления</a>
+              {% else %}
+                  <span>{{ user.username }}</span>
+              {% endif %}
+              <a href="/logout">Выйти</a>
+          {% else %}
+              <a href="/login">Войти</a>
+              <a href="/register">Зарегистрироваться</a>
+          {% endif %}
+      </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <small>© Алиби — система бронирования квестов</small>
+  </footer>
+</body>
+</html>
