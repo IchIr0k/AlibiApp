@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, Date, Time, CheckConstraint, JSON
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, Date, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -45,10 +45,6 @@ class Quest(Base):
     organizer_email = Column(String(120), nullable=False, default='alibi@mail.ru')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    __table_args__ = (
-        CheckConstraint('fear_level >= 1 AND fear_level <= 5', name='check_fear_level'),
-    )
 
     # Relationships
     schedules = relationship("Schedule", back_populates="quest", cascade="all, delete-orphan")
@@ -106,10 +102,6 @@ class Booking(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (
-        CheckConstraint('participants_count >= 2', name='chk_participants_count'),
-    )
-
     user = relationship("User", back_populates="bookings")
     quest = relationship("Quest", back_populates="bookings")
     schedule = relationship("Schedule", back_populates="bookings")
@@ -133,10 +125,6 @@ class QuestReview(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (
-        CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating'),
-    )
-
     quest = relationship("Quest", back_populates="reviews")
     user = relationship("User", back_populates="reviews")
     booking = relationship("Booking", back_populates="review")
@@ -146,12 +134,12 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", onupdate="SET NULL"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     action_type = Column(String(50), nullable=False)
     table_name = Column(String(100), nullable=False)
     record_id = Column(Integer)
-    old_values = Column(JSON)
-    new_values = Column(JSON)
+    old_values = Column(Text)  # JSON в вашей БД, но в модели используем Text для простоты
+    new_values = Column(Text)  # JSON в вашей БД
     ip_address = Column(String(45))
     user_agent = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

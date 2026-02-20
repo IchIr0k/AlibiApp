@@ -8,25 +8,41 @@
         {{ error }}
     </div>
     {% endif %}
-    <form method="post" class="auth-form">
+    <form method="post" class="auth-form" autocomplete="off">
         <label>
             Логин*
-            <input type="text" name="username" value="{{ request.query_params.get('username', '') }}" required 
-                   minlength="3" maxlength="50" placeholder="Минимум 3 символа">
+            <input type="text" name="username" required
+                   minlength="3" maxlength="50" placeholder="Минимум 3 символа"
+                   autocomplete="off">
         </label>
-        
+
         <label>
-            Email (необязательно)
-            <input type="email" name="email" value="{{ request.query_params.get('email', '') }}" 
-                   placeholder="your@email.com">
+            Email*
+            <input type="email" name="email" required
+                   placeholder="your@email.com" autocomplete="off">
         </label>
-        
+
+        <label>
+            Телефон (необязательно)
+            <input type="tel" name="phone" placeholder="+7 (999) 123-45-67" autocomplete="off">
+        </label>
+
+        <label>
+            Имя (необязательно)
+            <input type="text" name="first_name" placeholder="Ваше имя" autocomplete="off">
+        </label>
+
+        <label>
+            Фамилия (необязательно)
+            <input type="text" name="last_name" placeholder="Ваша фамилия" autocomplete="off">
+        </label>
+
         <label>
             Пароль*
-            <input type="password" name="password" required minlength="4" 
-                   placeholder="Минимум 4 символа">
+            <input type="password" name="password" required minlength="4"
+                   placeholder="Минимум 4 символа" autocomplete="new-password">
         </label>
-        
+
         <button type="submit" class="btn">Зарегистрироваться</button>
     </form>
     <p style="margin-top: 20px; text-align: center;">
@@ -76,4 +92,29 @@
     max-width: 500px;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Очищаем все поля при загрузке страницы
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Отключаем автозаполнение для формы
+    const form = document.querySelector('.auth-form');
+    if (form) {
+        form.setAttribute('autocomplete', 'off');
+    }
+
+    // Дополнительная защита от автозаполнения
+    setTimeout(() => {
+        inputs.forEach(input => {
+            if (input.value !== '') {
+                input.value = '';
+            }
+        });
+    }, 100);
+});
+</script>
 {% endblock %}

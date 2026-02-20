@@ -19,7 +19,11 @@
                 </p>
             </div>
             <div class="booking-status">
-                {% set is_past = booking.booking_date_time < now() %}
+                {# Преобразуем datetime с часовым поясом в наивный для сравнения #}
+                {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
+                {% set current_time = now() %}
+                {% set is_past = booking_time < current_time %}
+
                 {% if is_past %}
                 <span class="status past">Завершено</span>
                 {% else %}
@@ -27,11 +31,6 @@
                 {% endif %}
 
                 <div class="booking-actions">
-                    <button class="btn outline small download-statement"
-                            data-quest-title="{{ booking.quest.title }}"
-                            data-quest-price="{{ booking.total_price }}">
-                        📄 Скачать заявление
-                    </button>
                     <button class="btn outline small download-receipt"
                             data-quest-title="{{ booking.quest.title }}"
                             data-quest-price="{{ booking.total_price }}">
@@ -50,41 +49,6 @@
     {% endif %}
 </div>
 
-<!-- Модальное окно для ввода данных -->
-<div id="statementModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Данные для заявления</h3>
-        <form id="statementForm">
-            <input type="hidden" id="questTitle" name="quest_title">
-            <input type="hidden" id="questPrice" name="quest_price">
-
-            <label>
-                Фамилия Имя Отчество:
-                <input type="text" id="fullName" name="full_name" required
-                       placeholder="Введите ваше ФИО">
-            </label>
-
-            <label>
-                Серия паспорта:
-                <input type="text" id="passportSeries" name="passport_series" required
-                       placeholder="XXXX" maxlength="4" pattern="[0-9]{4}">
-            </label>
-
-            <label>
-                Номер паспорта:
-                <input type="text" id="passportNumber" name="passport_number" required
-                       placeholder="XXXXXX" maxlength="6" pattern="[0-9]{6}">
-            </label>
-
-            <div class="modal-actions">
-                <button type="submit" class="btn">Скачать заявление</button>
-                <button type="button" class="btn outline cancel">Отмена</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <style>
 .bookings-list {
     margin-top: 20px;
@@ -99,6 +63,10 @@
     border-radius: 8px;
     margin-bottom: 15px;
     border: 1px solid #39417b;
+}
+
+.booking-info {
+    flex: 1;
 }
 
 .booking-info h4 {
@@ -117,6 +85,7 @@
     flex-shrink: 0;
     margin-left: 20px;
     text-align: center;
+    min-width: 120px;
 }
 
 .status {
@@ -150,72 +119,6 @@
     white-space: nowrap;
 }
 
-/* Стили модального окна */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-    background-color: var(--panel);
-    margin: 5% auto;
-    padding: 20px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    border: 1px solid #39417b;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover {
-    color: #e6e9fb;
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: #e6e9fb;
-}
-
-.modal-content label {
-    display: block;
-    margin-bottom: 15px;
-    color: #e6e9fb;
-}
-
-.modal-content input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #39417b;
-    border-radius: 6px;
-    background: #0b1330;
-    color: #e6e9fb;
-    box-sizing: border-box;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.modal-actions .btn {
-    flex: 1;
-}
-
 .no-bookings {
     text-align: center;
     padding: 40px;
@@ -229,24 +132,28 @@
     color: #a0a7e6;
     font-size: 1.1em;
 }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .booking-item {
+        flex-direction: column;
+    }
+
+    .booking-status {
+        margin-left: 0;
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .booking-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('statementModal');
-    const closeBtn = document.querySelector('.close');
-    const cancelBtn = document.querySelector('.cancel');
-    const statementForm = document.getElementById('statementForm');
-
-    // Открытие модального окна для заявления
-    document.querySelectorAll('.download-statement').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.getElementById('questTitle').value = this.dataset.questTitle;
-            document.getElementById('questPrice').value = this.dataset.questPrice;
-            modal.style.display = 'block';
-        });
-    });
-
     // Скачивание чека
     document.querySelectorAll('.download-receipt').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -269,59 +176,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `чек_${questTitle.replace(/\s+/g, '_')}.pdf`;
+                a.download = `чек_${questTitle.replace(/\s+/g, '_')}.txt`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
             })
-            .catch(error => console.error('Ошибка:', error));
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка при скачивании чека');
+            });
         });
-    });
-
-    // Закрытие модального окна
-    closeBtn.addEventListener('click', () => modal.style.display = 'none');
-    cancelBtn.addEventListener('click', () => modal.style.display = 'none');
-
-    // Закрытие при клике вне окна
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    // Отправка формы заявления
-    statementForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const formData = {
-            full_name: document.getElementById('fullName').value,
-            passport_series: document.getElementById('passportSeries').value,
-            passport_number: document.getElementById('passportNumber').value,
-            quest_title: document.getElementById('questTitle').value,
-            quest_price: document.getElementById('questPrice').value
-        };
-
-        fetch('/download-statement', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `заявление_${formData.quest_title.replace(/\s+/g, '_')}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            modal.style.display = 'none';
-            statementForm.reset();
-        })
-        .catch(error => console.error('Ошибка:', error));
     });
 });
 </script>

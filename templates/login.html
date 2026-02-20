@@ -8,17 +8,17 @@
         {{ error }}
     </div>
     {% endif %}
-    <form method="post" class="auth-form">
+    <form method="post" class="auth-form" autocomplete="off">
         <label>
             Логин
-            <input type="text" name="username" required placeholder="Введите ваш логин">
+            <input type="text" name="username" required placeholder="Введите ваш логин" autocomplete="off">
         </label>
-        
+
         <label>
             Пароль
-            <input type="password" name="password" required placeholder="Введите ваш пароль">
+            <input type="password" name="password" required placeholder="Введите ваш пароль" autocomplete="new-password">
         </label>
-        
+
         <button type="submit" class="btn">Войти</button>
     </form>
     <p style="margin-top: 20px; text-align: center;">
@@ -68,4 +68,21 @@
     max-width: 500px;
 }
 </style>
+
+<script>
+// Дополнительно очищаем автозаполнение при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Очищаем поля ввода
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Отключаем автозаполнение для формы
+    const form = document.querySelector('.auth-form');
+    if (form) {
+        form.setAttribute('autocomplete', 'off');
+    }
+});
+</script>
 {% endblock %}

@@ -37,19 +37,24 @@
                     <td>
                         <strong>{{ booking.quest.title }}</strong>
                     </td>
-                    <td>{{ booking.user.username }}</td>
+                    <td>{{ booking.user.username if booking.user else 'Неизвестно' }}</td>
                     <td>{{ booking.customer_phone }}</td>
                     <td>{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</td>
                     <td>
-                        {% if booking.booking_date_time < now() %}
+                        {# Преобразуем datetime с часовым поясом в наивный для сравнения #}
+                        {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
+                        {% set current_time = now() %}
+                        {% set is_past = booking_time < current_time %}
+
+                        {% if is_past %}
                         <span class="status past">Завершено</span>
                         {% else %}
                         <span class="status upcoming">Активно</span>
                         {% endif %}
                     </td>
                     <td>
-                        <form method="post" action="/admin/delete-booking/{{ booking.id }}">
-                            <button type="submit" class="btn danger small">Удалить</button>
+                        <form method="post" action="/admin/delete-booking/{{ booking.id }}" style="display: inline;">
+                            <button type="submit" class="btn danger small" onclick="return confirm('Вы уверены, что хотите удалить это бронирование?')">Удалить</button>
                         </form>
                     </td>
                 </tr>
@@ -68,7 +73,7 @@
 
     {% else %}
     <div class="no-bookings">
-        <p>Нет активных бронирований.</p>
+        <p>Нет бронирований.</p>
     </div>
     {% endif %}
 </div>
@@ -79,6 +84,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .filters select {
@@ -87,18 +94,29 @@
     color: #e6e9fb;
     padding: 8px 12px;
     border-radius: 6px;
+    min-width: 200px;
+}
+
+.filters select:hover {
+    border-color: #5d67ff;
+}
+
+.filters select:focus {
+    outline: none;
+    border-color: var(--accent);
 }
 
 .bookings-table {
     background: var(--card);
     border-radius: 8px;
-    overflow: hidden;
+    overflow-x: auto;
     border: 1px solid #39417b;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
 th, td {
@@ -126,6 +144,7 @@ tr:hover {
     border-radius: 12px;
     font-size: 0.8em;
     font-weight: bold;
+    display: inline-block;
 }
 
 .status.upcoming {
@@ -143,18 +162,18 @@ tr:hover {
     font-size: 0.8em;
 }
 
-.admin-badge {
-    background: #ffc107;
-    color: #000;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.7em;
-    margin-left: 5px;
+.btn.danger {
+    background: #dc3545;
+    color: white;
+    border: none;
 }
 
-.muted {
-    color: #6c757d;
-    font-style: italic;
+.btn.danger:hover {
+    background: #c82333;
+}
+
+.stats {
+    color: #a0a7e6;
 }
 
 .no-bookings {
@@ -169,6 +188,18 @@ tr:hover {
     color: #a0a7e6;
     font-size: 1.1em;
 }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .admin-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters select {
+        width: 100%;
+    }
+}
 </style>
 
 <script>
@@ -180,5 +211,17 @@ function filterByQuest() {
         window.location.href = '/admin/bookings';
     }
 }
+
+// Подтверждение удаления
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForms = document.querySelectorAll('form[action*="/admin/delete-booking/"]');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Вы уверены, что хотите удалить это бронирование?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

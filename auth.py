@@ -35,7 +35,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        # Если пользователь не найден, очищаем сессию
         request.session.clear()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
@@ -47,5 +46,3 @@ def require_admin(user=Depends(get_current_user)):
     if not user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return user
-
-

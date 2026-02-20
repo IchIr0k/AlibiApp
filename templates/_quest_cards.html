@@ -1,3 +1,4 @@
+{% if quests %}
 <div class="cards-grid">
   {% for quest in quests %}
   <div class="card">
@@ -14,7 +15,7 @@
       <span class="price">{{ quest.price }}₽</span>
     </div>
 
-    <p class="desc">{{ quest.description[:110] }}{% if quest.description|length > 110 %}...{% endif %}</p>
+    <p class="desc">{{ quest.description[:100] }}{% if quest.description|length > 100 %}...{% endif %}</p>
 
     <div class="card-actions">
       <a href="/quest/{{ quest.id }}" class="btn">Подробнее</a>
@@ -22,30 +23,59 @@
   </div>
   {% endfor %}
 </div>
+{% else %}
+<div class="no-quests">
+  <p>Квесты не найдены</p>
+</div>
+{% endif %}
 
 <style>
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
 .card {
     background: var(--card);
-    padding: 16px; /* Увеличил padding */
+    padding: 16px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Увеличил тень */
-    min-height: 360px; /* Увеличил минимальную высоту */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    min-height: 360px;
     display: flex;
     flex-direction: column;
 }
 
 .card img {
     width: 100%;
-    height: 160px; /* Увеличил высоту изображения */
+    height: 160px;
     object-fit: cover;
     border-radius: 8px;
     background: #0b122e;
 }
 
 .card-placeholder {
-    height: 160px; /* Увеличил высоту плейсхолдера */
+    height: 160px;
     background: #0b122e;
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3em;
+    color: #39417b;
+}
+
+.card h4 {
+    margin: 10px 0 4px;
+    color: #e6e9fb;
+    font-size: 1.1em;
+}
+
+.card .meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
 }
 
 .price-card {
@@ -54,11 +84,36 @@
     border-radius: 8px;
     margin: 8px 0;
     border: 1px solid #4650f5;
+    display: inline-block;
 }
 
 .price {
     color: var(--accent);
     font-weight: bold;
-    font-size: 1.3em; /* Увеличил размер цены */
+    font-size: 1.3em;
+}
+
+.card .desc {
+    font-size: 13px;
+    color: #d2d6f7;
+    height: 60px;
+    overflow: hidden;
+    line-height: 1.4;
+    margin: 8px 0;
+}
+
+.card .card-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.no-quests {
+    text-align: center;
+    padding: 40px;
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid #39417b;
+    color: #a0a7e6;
 }
 </style>

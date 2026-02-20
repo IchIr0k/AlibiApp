@@ -4,59 +4,6 @@
 <div class="container">
     <h2>Панель администратора</h2>
 
-<!-- Кнопки отчетов -->
-<div class="report-controls">
-    <h3>Отчеты по бронированиям</h3>
-    <div class="report-buttons">
-        <a href="/admin/report/word" class="btn outline">
-            📄 Отчет по брони в Word
-        </a>
-        <a href="/admin/report/excel" class="btn outline">
-            📊 Отчет по брони в Excel
-        </a>
-        <a href="/admin/report/pdf" class="btn outline">
-            📑 Отчет по брони в PDF
-        </a>
-    </div>
-    <p class="report-info">Отчеты содержат данные о всех бронированиях с информацией о пользователях, квестах и общей выручке.</p>
-</div>
-
-    {% if error %}
-    <div class="alert error">
-        {{ error }}
-
-        {% if blocked_quest_id and quest_bookings %}
-        <div style="margin-top: 15px; padding: 15px; background: #2a1a1a; border-radius: 6px;">
-            <strong>Активные бронирования для этого квеста:</strong>
-            <div style="margin-top: 10px;">
-                {% for booking in quest_bookings %}
-                <div style="padding: 8px; margin: 5px 0; background: #3a2a2a; border-radius: 4px;">
-                    📅 {{ booking.date_time }} - {{ booking.user.username }}
-                    {% if booking.user.email %}({{ booking.user.email }}){% endif %}
-                </div>
-                {% endfor %}
-            </div>
-
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}"
-                      onsubmit="return confirm('Вы уверены, что хотите удалить ВСЕ бронирования этого квеста?')">
-                    <button type="submit" class="btn danger small">Удалить все бронирования</button>
-                </form>
-
-                <form method="post" action="/admin/delete-quest-with-bookings/{{ blocked_quest_id }}"
-                      onsubmit="return confirm('ВНИМАНИЕ: Это удалит квест и ВСЕ его бронирования. Продолжить?')">
-                    <button type="submit" class="btn danger small">Удалить квест и бронирования</button>
-                </form>
-
-                <a href="/admin/bookings?quest_id={{ blocked_quest_id }}" class="btn outline small">
-                    Управление бронированиями
-                </a>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
     <div class="admin-controls">
         <a href="/admin/add" class="btn">Добавить квест</a>
         <a href="/admin/bookings" class="btn outline">Управление бронированиями</a>
@@ -72,13 +19,14 @@
             <div style="margin-top: 10px;">
                 {% for booking in quest_bookings %}
                 <div style="padding: 8px; margin: 5px 0; background: #3a2a2a; border-radius: 4px;">
-                    📅 {{ booking.date_time }} - {{ booking.user.username }}
-                    {% if booking.user.email %}({{ booking.user.email }}){% endif %}
+                    📅 {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') if booking.booking_date_time else 'Дата не указана' }} -
+                    {{ booking.user.username if booking.user else 'Неизвестно' }}
+                    {% if booking.user and booking.user.email %}({{ booking.user.email }}){% endif %}
                 </div>
                 {% endfor %}
             </div>
 
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}"
                       onsubmit="return confirm('Вы уверены, что хотите удалить ВСЕ бронирования этого квеста?')">
                     <button type="submit" class="btn danger small">Удалить все бронирования</button>
@@ -100,12 +48,12 @@
 
     <div class="admin-list">
         {% for q in quests %}
-        <div class="admin-item {% if blocked_quest_id == q.id %}highlighted{% endif %}">
+        <div class="admin-item {% if blocked_quest_id == q.id %}highlighted{% endif %}" id="quest-{{ q.id }}">
             <div class="thumb">
                 {% if q.image_path %}
                 <img src="/static/{{ q.image_path }}" alt="{{ q.title }}">
                 {% else %}
-                <div class="card-placeholder small"></div>
+                <div class="card-placeholder small">🕵️‍♂️</div>
                 {% endif %}
             </div>
             <div class="info">
@@ -115,14 +63,14 @@
                     <span class="price">{{ q.price }}₽</span>
                 </div>
 
-                {% set booking_count = namespace(value=0) %}
+                {% set booking_count = 0 %}
                 {% for booking in quest_bookings if booking.quest_id == q.id %}
-                    {% set booking_count.value = booking_count.value + 1 %}
+                    {% set booking_count = booking_count + 1 %}
                 {% endfor %}
 
-                {% if booking_count.value > 0 %}
+                {% if booking_count > 0 %}
                 <div class="booking-badge">
-                    🗓️ {{ booking_count.value }} бронирований
+                    🗓️ {{ booking_count }} бронирований
                 </div>
                 {% endif %}
 
@@ -141,46 +89,77 @@
 </div>
 
 <style>
-.report-controls {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-    border: 1px solid #39417b;
-}
-
-.report-controls h3 {
-    margin: 0 0 15px 0;
-    color: #e6e9fb;
-    font-size: 1.2em;
-}
-
-.report-buttons {
+.admin-controls {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
+    margin-bottom: 20px;
 }
 
-.report-buttons .btn {
+.admin-controls .btn {
+    padding: 10px 16px;
+}
+
+.admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--panel);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #39417b;
+}
+
+.admin-item.highlighted {
+    border: 2px solid #ffc107;
+    background: #1a2244;
+}
+
+.thumb img {
+    width: 100px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.card-placeholder.small {
+    width: 100px;
+    height: 70px;
+    background: #0b122e;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2em;
+    color: #39417b;
+}
+
+.info {
     flex: 1;
-    min-width: 200px;
-    padding: 12px 16px;
-    text-align: center;
-    font-size: 0.95em;
 }
 
-.report-info {
-    margin: 15px 0 0 0;
+.info h4 {
+    margin: 0 0 5px 0;
+    color: #e6e9fb;
+}
+
+.info .meta {
+    margin: 0;
     color: var(--muted);
     font-size: 0.9em;
-    text-align: center;
 }
 
 .price-card {
     background: rgba(70, 80, 245, 0.2);
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin: 8px 0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin: 5px 0;
     border: 1px solid #4650f5;
     display: inline-block;
 }
@@ -190,14 +169,73 @@
     font-weight: bold;
     font-size: 1.1em;
 }
+
+.booking-badge {
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    background: var(--btn);
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: white;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.btn:hover {
+    background: #3a44e0;
+}
+
+.btn.outline {
+    background: transparent;
+    border: 1px solid #39417b;
+    color: #dfe6ff;
+}
+
+.btn.outline:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.btn.danger {
+    background: #dc3545;
+}
+
+.btn.danger:hover {
+    background: #c82333;
+}
+
+.btn.small {
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
+
+.alert.error {
+    background: #3a1a1a;
+    border: 1px solid #dc3545;
+    color: lightpink;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
 </style>
 
 <script>
-function showWordMessage() {
-    alert('Функция отчета в Word будет реализована позже. Используйте Excel или PDF отчеты.');
-    return false;
-}
-
 async function confirmDelete(form, questTitle) {
     const questId = form.action.split('/').pop();
 
@@ -225,13 +263,16 @@ async function confirmDelete(form, questTitle) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Прокрутка к выделенному квесту
     const urlParams = new URLSearchParams(window.location.search);
-    const questId = urlParams.get('highlight');
+    const highlight = urlParams.get('highlight');
 
-    if (questId) {
-        const element = document.getElementById(`quest-${questId}`);
+    if (highlight) {
+        const element = document.getElementById(`quest-${highlight}`);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
     }
 });
