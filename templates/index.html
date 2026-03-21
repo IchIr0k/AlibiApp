@@ -6,19 +6,19 @@
   <aside class="filters">
     <form id="filter-form">
       <h3>Жанры</h3>
-      <label><input type="checkbox" name="genre" value="детям"> Детям</label><br>
-      <label><input type="checkbox" name="genre" value="страшные"> Страшные</label><br>
-      <label><input type="checkbox" name="genre" value="веселые"> Весёлые</label><br>
-      <label><input type="checkbox" name="genre" value="с актерами"> С актёрами</label><br>
-      <label><input type="checkbox" name="genre" value="без актеров"> Без актёров</label><br>
-      <label><input type="checkbox" name="genre" value="нестрашные"> Нестрашные</label><br>
-      <label><input type="checkbox" name="genre" value="загадки"> Загадки</label><br>
+      <label><input type="checkbox" name="genre" value="детям"> Детям</label>
+      <label><input type="checkbox" name="genre" value="страшные"> Страшные</label>
+      <label><input type="checkbox" name="genre" value="веселые"> Весёлые</label>
+      <label><input type="checkbox" name="genre" value="с актерами"> С актёрами</label>
+      <label><input type="checkbox" name="genre" value="без актеров"> Без актёров</label>
+      <label><input type="checkbox" name="genre" value="нестрашные"> Нестрашные</label>
+      <label><input type="checkbox" name="genre" value="загадки"> Загадки</label>
 
       <h3>Сложность</h3>
-      <label><input type="checkbox" name="difficulty" value="легкий"> Лёгкий</label><br>
-      <label><input type="checkbox" name="difficulty" value="нормальный"> Нормальный</label><br>
-      <label><input type="checkbox" name="difficulty" value="сложный"> Сложный</label><br>
-      <label><input type="checkbox" name="difficulty" value="экстремальный"> Экстремальный</label><br>
+      <label><input type="checkbox" name="difficulty" value="легкий"> Лёгкий</label>
+      <label><input type="checkbox" name="difficulty" value="нормальный"> Нормальный</label>
+      <label><input type="checkbox" name="difficulty" value="сложный"> Сложный</label>
+      <label><input type="checkbox" name="difficulty" value="экстремальный"> Экстремальный</label>
 
       <h3>Уровень страха</h3>
       <div id="fear-level" class="stars">
@@ -49,6 +49,21 @@
   <main class="main-col">
     <div class="catalog-header">
       <h2>Каталог квестов</h2>
+
+      <!-- Статистика для пользователя -->
+      {% if user %}
+      <div class="user-stats">
+        <div class="stats-badge">
+          <span class="stats-icon">🎮</span>
+          <span class="stats-text">Всего квестов: {{ total_quests }}</span>
+        </div>
+        <div class="stats-badge">
+          <span class="stats-icon">📅</span>
+          <span class="stats-text">Мои бронирования: {{ user_bookings_count }}</span>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="catalog-controls">
         <!-- Сортировка -->
         <div class="sort-container">
@@ -84,6 +99,75 @@
     {% endif %}
   </main>
 </div>
+
+<style>
+.user-stats {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.stats-badge {
+    background: var(--card);
+    border: 1px solid #4650f5;
+    border-radius: 12px;
+    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+}
+
+.stats-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+    border-color: var(--accent);
+}
+
+.stats-icon {
+    font-size: 1.5em;
+}
+
+.stats-text {
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #e6e9fb;
+}
+
+.catalog-header {
+    margin-bottom: 20px;
+}
+
+.catalog-header h2 {
+    margin-bottom: 10px;
+}
+
+.catalog-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .user-stats {
+        justify-content: center;
+    }
+
+    .stats-badge {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .catalog-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+</style>
 
 <script>
 // Инициализация фильтров при загрузке страницы
@@ -132,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Применение фильтров
+    // Применение фильтров - ИСПРАВЛЕНО!
     const applyBtn = document.getElementById("apply-filters");
     if (applyBtn) {
         applyBtn.addEventListener("click", function() {
@@ -140,11 +224,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = new FormData(form);
             const params = new URLSearchParams();
 
-            // Собираем все выбранные значения
-            for (const [key, value] of data.entries()) {
-                if (value) {
-                    params.append(key, value);
+            // Собираем все значения из FormData правильно
+            // Используем getAll для получения всех значений с одинаковым именем
+            const genreValues = data.getAll("genre");
+            const difficultyValues = data.getAll("difficulty");
+            const fearLevel = data.get("fear_level");
+            const players = data.get("players");
+
+            // Добавляем жанры (каждый как отдельный параметр genre)
+            genreValues.forEach(genre => {
+                if (genre) {
+                    params.append("genre", genre);
                 }
+            });
+
+            // Добавляем сложность (каждый как отдельный параметр difficulty)
+            difficultyValues.forEach(difficulty => {
+                if (difficulty) {
+                    params.append("difficulty", difficulty);
+                }
+            });
+
+            // Добавляем уровень страха
+            if (fearLevel) {
+                params.append("fear_level", fearLevel);
+            }
+
+            // Добавляем количество игроков
+            if (players) {
+                params.append("players", players);
             }
 
             // Переходим на отфильтрованную страницу
@@ -162,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Инициализация из URL параметров
+    // Инициализация из URL параметров - ИСПРАВЛЕНО!
     function initFromURL() {
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -190,13 +298,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Чекбоксы
-        urlParams.getAll('genre').forEach(genre => {
+        // Чекбоксы жанров - получаем ВСЕ значения genre
+        const allGenres = urlParams.getAll('genre');
+        allGenres.forEach(genre => {
             const checkbox = document.querySelector(`input[name="genre"][value="${genre}"]`);
             if (checkbox) checkbox.checked = true;
         });
 
-        urlParams.getAll('difficulty').forEach(difficulty => {
+        // Чекбоксы сложности - получаем ВСЕ значения difficulty
+        const allDifficulties = urlParams.getAll('difficulty');
+        allDifficulties.forEach(difficulty => {
             const checkbox = document.querySelector(`input[name="difficulty"][value="${difficulty}"]`);
             if (checkbox) checkbox.checked = true;
         });

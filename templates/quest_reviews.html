@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Отзывы о квесте {{ quest.title }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="reviews-header">
+        <a href="/quest/{{ quest.id }}" class="btn outline">← Назад к квесту</a>
+        <h2>Отзывы о квесте "{{ quest.title }}"</h2>
+        
+        {% if avg_rating %}
+        <div class="rating-summary">
+            <span class="average-rating">{{ avg_rating }}</span>
+            <span class="stars-display">
+                {% for i in range(1, 6) %}
+                    {% if i <= avg_rating|int %}
+                        ★
+                    {% else %}
+                        ☆
+                    {% endif %}
+                {% endfor %}
+            </span>
+            <span class="review-count">({{ reviews|length }} отзывов)</span>
+        </div>
+        {% endif %}
+        
+        {% if can_review %}
+        <div class="write-review-btn">
+            <a href="/my-bookings" class="btn success">Написать отзыв</a>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if reviews %}
+    <div class="reviews-list">
+        {% for review in reviews %}
+        <div class="review-card">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <strong>{{ review.user.username }}</strong>
+                    <span class="review-date">{{ review.created_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+                <div class="review-rating">
+                    {% for i in range(1, 6) %}
+                        {% if i <= review.rating %}
+                            ★
+                        {% else %}
+                            ☆
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% if review.comment %}
+            <div class="review-comment">
+                {{ review.comment }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-reviews">
+        <p>Пока нет отзывов. Будьте первым!</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.reviews-header {
+    margin-bottom: 30px;
+}
+
+.reviews-header h2 {
+    margin: 20px 0 10px 0;
+}
+
+.rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--panel);
+    border-radius: 8px;
+}
+
+.average-rating {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.stars-display {
+    font-size: 1.2em;
+    color: gold;
+}
+
+.review-count {
+    color: var(--muted);
+}
+
+.write-review-btn {
+    margin-top: 15px;
+}
+
+.btn.success {
+    background: #28a745;
+}
+
+.btn.success:hover {
+    background: #218838;
+}
+
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.review-card {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #39417b;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #39417b;
+}
+
+.reviewer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.reviewer-info strong {
+    color: #e6e9fb;
+    font-size: 1.1em;
+}
+
+.review-date {
+    color: var(--muted);
+    font-size: 0.8em;
+}
+
+.review-rating {
+    font-size: 1.2em;
+    color: gold;
+}
+
+.review-comment {
+    color: #d2d6f7;
+    line-height: 1.5;
+}
+
+.no-reviews {
+    text-align: center;
+    padding: 40px;
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid #39417b;
+    color: #a0a7e6;
+}
+</style>
+{% endblock %}

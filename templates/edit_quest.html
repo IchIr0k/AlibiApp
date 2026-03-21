@@ -5,8 +5,6 @@
     <h2>Редактировать квест: {{ quest.title }}</h2>
 
     <form action="/admin/edit/{{ quest.id }}" method="post" enctype="multipart/form-data" class="admin-form" id="editForm">
-        <input type="hidden" name="clipboard_image" id="clipboardImage" value="">
-
         <label>Название<br>
             <input type="text" name="title" id="title" value="{{ quest.title }}" required>
         </label>
@@ -52,8 +50,8 @@
             </div>
         </label>
 
-        <label>Email организатора<br>
-            <input type="email" name="organizer_email" id="organizer_email" value="{{ quest.organizer_email }}" required>
+        <label>Адрес проведения квеста<br>
+            <input type="text" name="address" id="address" value="{{ quest.address }}" required>
         </label>
 
         <label>Цена (руб.)<br>
@@ -69,16 +67,9 @@
         </label>
 
         <label>Новое изображение квеста<br>
-            <div class="image-upload-container">
-                <input type="file" name="image" id="imageInput" accept="image/*" style="display: none;">
-                <button type="button" class="btn outline" onclick="document.getElementById('imageInput').click()">
-                    Выбрать файл
-                </button>
-                <button type="button" class="btn outline" onclick="pasteFromClipboard()">
-                    Вставить из буфера обмена
-                </button>
-                <div id="imagePreview" style="margin-top: 10px;"></div>
-            </div>
+            <input type="file" name="image" id="image" accept="image/*">
+            <div id="imagePreview" style="margin-top: 10px;"></div>
+            <small style="color: var(--muted);">Выберите файл изображения (JPG, PNG, GIF)</small>
         </label>
 
         <button type="submit" class="btn">Сохранить изменения</button>
@@ -159,16 +150,30 @@
     margin-bottom: 10px;
 }
 
-.image-upload-container {
-    background: var(--panel);
-    padding: 15px;
-    border-radius: 8px;
+input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 10px 0;
     border: 1px solid #39417b;
+    border-radius: 6px;
+    background: #0b1330;
+    color: #e6e9fb;
+    cursor: pointer;
 }
 
-.image-upload-container .btn {
+input[type="file"]::file-selector-button {
+    background: var(--btn);
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
     margin-right: 10px;
-    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: #3a44e0;
 }
 
 .btn {
@@ -181,6 +186,7 @@
     cursor: pointer;
     font-size: 1em;
     margin-right: 10px;
+    transition: background 0.2s;
 }
 
 .btn:hover {
@@ -207,56 +213,18 @@
 </style>
 
 <script>
-let clipboardImageData = null;
-
-// Обработка выбора файла
-document.getElementById('imageInput').addEventListener('change', function(e) {
+// Превью выбранного изображения
+document.getElementById('image').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
-        previewImage(file);
-    }
-});
-
-// Вставка из буфера обмена
-async function pasteFromClipboard() {
-    try {
-        const clipboardItems = await navigator.clipboard.read();
-        for (const item of clipboardItems) {
-            for (const type of item.types) {
-                if (type.startsWith('image/')) {
-                    const blob = await item.getType(type);
-                    previewImage(blob);
-                    break;
-                }
-            }
-        }
-    } catch (err) {
-        alert('Вставка из буфера обмена не поддерживается. Используйте кнопку "Выбрать файл"');
-    }
-}
-
-// Превью изображения
-function previewImage(blob) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview = document.getElementById('imagePreview');
-        preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; margin-top: 10px;">`;
-        clipboardImageData = e.target.result;
-        document.getElementById('clipboardImage').value = e.target.result;
-    };
-    reader.readAsDataURL(blob);
-}
-
-// Обработка Ctrl+V для вставки изображения
-document.addEventListener('paste', function(e) {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-            const blob = items[i].getAsFile();
-            previewImage(blob);
-            e.preventDefault();
-            break;
-        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('imagePreview').innerHTML = '';
     }
 });
 
@@ -282,7 +250,16 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         description.style.borderColor = '';
     }
 
-    // Проверка жанров (хотя бы один чекбокс выбран)
+    // Проверка адреса
+    const address = document.getElementById('address');
+    if (!address.value.trim()) {
+        address.style.borderColor = '#dc3545';
+        isValid = false;
+    } else {
+        address.style.borderColor = '';
+    }
+
+    // Проверка жанров
     const genres = document.querySelectorAll('input[name="genres"]:checked');
     const genresGroup = document.getElementById('genresGroup');
     const genresError = document.getElementById('genresError');
@@ -327,16 +304,6 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         playersError.style.display = 'none';
     }
 
-    // Проверка email
-    const email = document.getElementById('organizer_email');
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.value || !emailPattern.test(email.value)) {
-        email.style.borderColor = '#dc3545';
-        isValid = false;
-    } else {
-        email.style.borderColor = '';
-    }
-
     // Проверка цены
     const price = document.getElementById('price');
     if (!price.value || price.value < 0) {
@@ -361,6 +328,10 @@ document.getElementById('description').addEventListener('input', function() {
     if (this.value.trim()) this.style.borderColor = '';
 });
 
+document.getElementById('address').addEventListener('input', function() {
+    if (this.value.trim()) this.style.borderColor = '';
+});
+
 document.getElementById('difficulty').addEventListener('change', function() {
     if (this.value) this.style.borderColor = '';
 });
@@ -375,11 +346,6 @@ document.getElementById('max_players').addEventListener('input', function() {
         this.style.borderColor = '';
         playersError.style.display = 'none';
     }
-});
-
-document.getElementById('organizer_email').addEventListener('input', function() {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (this.value && emailPattern.test(this.value)) this.style.borderColor = '';
 });
 
 document.getElementById('price').addEventListener('input', function() {

@@ -25,7 +25,7 @@
                 <tr>
                     <th>Квест</th>
                     <th>Пользователь</th>
-                    <th>Контактные данные</th>
+                    <th>Email</th>
                     <th>Дата и время</th>
                     <th>Статус</th>
                     <th>Действия</th>
@@ -38,7 +38,7 @@
                         <strong>{{ booking.quest.title }}</strong>
                     </td>
                     <td>{{ booking.user.username if booking.user else 'Неизвестно' }}</td>
-                    <td>{{ booking.customer_phone }}</td>
+                    <td>{{ booking.user.email if booking.user and booking.user.email else 'Не указан' }}</td>
                     <td>{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</td>
                     <td>
                         {# Преобразуем datetime с часовым поясом в наивный для сравнения #}

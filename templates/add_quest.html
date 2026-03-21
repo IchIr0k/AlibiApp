@@ -5,8 +5,6 @@
   <h2>Добавить квест</h2>
   
   <form action="/admin/add" method="post" enctype="multipart/form-data" class="admin-form" id="questForm">
-    <input type="hidden" name="clipboard_image" id="clipboardImage" value="">
-
     <label>Название<br><input type="text" name="title" id="title" required></label>
 
     <label>Описание<br><textarea name="description" id="description" rows="4" required></textarea></label>
@@ -47,8 +45,8 @@
       </div>
     </label>
 
-    <label>Email организатора<br>
-      <input type="email" name="organizer_email" id="organizer_email" value="alibi@mail.ru" required>
+    <label>Адрес проведения квеста<br>
+      <input type="text" name="address" id="address" placeholder="г. Москва, ул. Примерная, д. 1" required>
     </label>
 
     <label>Цена (руб)<br>
@@ -56,7 +54,9 @@
     </label>
 
     <label>Изображение квеста<br>
-        <input type="file" name="image" id="image" accept="image/*">
+      <input type="file" name="image" id="image" accept="image/*">
+      <div id="imagePreview" style="margin-top: 10px;"></div>
+      <small style="color: var(--muted);">Выберите файл изображения (JPG, PNG, GIF)</small>
     </label>
 
     <button type="submit" class="btn">Добавить квест</button>
@@ -137,6 +137,32 @@
   margin-bottom: 10px;
 }
 
+input[type="file"] {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0 10px 0;
+  border: 1px solid #39417b;
+  border-radius: 6px;
+  background: #0b1330;
+  color: #e6e9fb;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--btn);
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.2s;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #3a44e0;
+}
+
 .btn {
   background: var(--btn);
   padding: 10px 20px;
@@ -147,6 +173,7 @@
   cursor: pointer;
   font-size: 1em;
   margin-right: 10px;
+  transition: background 0.2s;
 }
 
 .btn:hover {
@@ -165,10 +192,25 @@
 </style>
 
 <script>
+// Превью выбранного изображения
+document.getElementById('image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('imagePreview').innerHTML = '';
+    }
+});
+
 document.getElementById('questForm').addEventListener('submit', function(e) {
   let isValid = true;
 
-  // Проверка жанров (хотя бы один чекбокс выбран)
+  // Проверка жанров
   const genres = document.querySelectorAll('input[name="genres"]:checked');
   const genresGroup = document.getElementById('genresGroup');
   const genresError = document.getElementById('genresError');
@@ -193,6 +235,15 @@ document.getElementById('questForm').addEventListener('submit', function(e) {
   } else {
     players.style.borderColor = '';
     playersError.style.display = 'none';
+  }
+
+  // Проверка адреса
+  const address = document.getElementById('address');
+  if (!address.value.trim()) {
+    address.style.borderColor = '#dc3545';
+    isValid = false;
+  } else {
+    address.style.borderColor = '';
   }
 
   // Проверка названия
@@ -231,16 +282,6 @@ document.getElementById('questForm').addEventListener('submit', function(e) {
     fearLevel.style.borderColor = '';
   }
 
-  // Проверка email
-  const email = document.getElementById('organizer_email');
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email.value || !emailPattern.test(email.value)) {
-    email.style.borderColor = '#dc3545';
-    isValid = false;
-  } else {
-    email.style.borderColor = '';
-  }
-
   // Проверка цены
   const price = document.getElementById('price');
   if (!price.value || price.value < 0) {
@@ -256,6 +297,39 @@ document.getElementById('questForm').addEventListener('submit', function(e) {
   }
 });
 
+// Убираем ошибки при вводе
+document.getElementById('title').addEventListener('input', function() {
+  if (this.value.trim()) this.style.borderColor = '';
+});
+
+document.getElementById('description').addEventListener('input', function() {
+  if (this.value.trim()) this.style.borderColor = '';
+});
+
+document.getElementById('address').addEventListener('input', function() {
+  if (this.value.trim()) this.style.borderColor = '';
+});
+
+document.getElementById('difficulty').addEventListener('change', function() {
+  if (this.value) this.style.borderColor = '';
+});
+
+document.getElementById('fear_level').addEventListener('input', function() {
+  if (this.value && this.value >= 1 && this.value <= 5) this.style.borderColor = '';
+});
+
+document.getElementById('max_players').addEventListener('input', function() {
+  const playersError = document.getElementById('playersError');
+  if (this.value && this.value >= 1) {
+    this.style.borderColor = '';
+    playersError.style.display = 'none';
+  }
+});
+
+document.getElementById('price').addEventListener('input', function() {
+  if (this.value && this.value >= 0) this.style.borderColor = '';
+});
+
 // Убираем ошибку при выборе жанра
 document.querySelectorAll('input[name="genres"]').forEach(checkbox => {
   checkbox.addEventListener('change', function() {
@@ -268,58 +342,6 @@ document.querySelectorAll('input[name="genres"]').forEach(checkbox => {
       genresError.style.display = 'none';
     }
   });
-});
-
-// Убираем ошибку при вводе количества игроков
-document.getElementById('max_players').addEventListener('input', function() {
-  const playersError = document.getElementById('playersError');
-  if (this.value && this.value >= 1) {
-    this.style.borderColor = '';
-    playersError.style.display = 'none';
-  }
-});
-
-// Убираем ошибку при вводе названия
-document.getElementById('title').addEventListener('input', function() {
-  if (this.value.trim()) {
-    this.style.borderColor = '';
-  }
-});
-
-// Убираем ошибку при вводе описания
-document.getElementById('description').addEventListener('input', function() {
-  if (this.value.trim()) {
-    this.style.borderColor = '';
-  }
-});
-
-// Убираем ошибку при выборе сложности
-document.getElementById('difficulty').addEventListener('change', function() {
-  if (this.value) {
-    this.style.borderColor = '';
-  }
-});
-
-// Убираем ошибку при вводе уровня страха
-document.getElementById('fear_level').addEventListener('input', function() {
-  if (this.value && this.value >= 1 && this.value <= 5) {
-    this.style.borderColor = '';
-  }
-});
-
-// Убираем ошибку при вводе email
-document.getElementById('organizer_email').addEventListener('input', function() {
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (this.value && emailPattern.test(this.value)) {
-    this.style.borderColor = '';
-  }
-});
-
-// Убираем ошибку при вводе цены
-document.getElementById('price').addEventListener('input', function() {
-  if (this.value && this.value >= 0) {
-    this.style.borderColor = '';
-  }
 });
 </script>
 {% endblock %}

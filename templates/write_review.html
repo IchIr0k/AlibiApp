@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Написать отзыв{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="review-form-container">
+        <h2>Написать отзыв о квесте "{{ quest.title }}"</h2>
+        
+        <div class="booking-info">
+            <p><strong>Дата прохождения:</strong> {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</p>
+        </div>
+        
+        <form id="review-form" method="post" action="/submit-review">
+            <input type="hidden" name="booking_id" value="{{ booking.id }}">
+            
+            <div class="rating-selector">
+                <label>Оценка:</label>
+                <div class="stars-selector">
+                    {% for i in range(1, 6) %}
+                    <span class="star" data-value="{{ i }}">☆</span>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="rating" id="rating-input" required>
+            </div>
+            
+            <div class="comment-input">
+                <label>Ваш отзыв:</label>
+                <textarea name="comment" rows="5" placeholder="Поделитесь впечатлениями о квесте..."></textarea>
+            </div>
+            
+            <div class="form-buttons">
+                <button type="submit" class="btn" id="submit-review">Отправить отзыв</button>
+                <a href="/quest/{{ quest.id }}" class="btn outline">Отмена</a>
+            </div>
+        </form>
+        
+        <div id="result-message" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<style>
+.review-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.review-form-container h2 {
+    margin-bottom: 20px;
+}
+
+.booking-info {
+    background: var(--panel);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #39417b;
+}
+
+.rating-selector {
+    margin-bottom: 20px;
+}
+
+.rating-selector label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.stars-selector {
+    display: flex;
+    gap: 10px;
+}
+
+.star {
+    font-size: 30px;
+    cursor: pointer;
+    color: gray;
+    transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+    color: gold;
+}
+
+.comment-input {
+    margin-bottom: 20px;
+}
+
+.comment-input label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.comment-input textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #39417b;
+    border-radius: 8px;
+    background: #0b1330;
+    color: #e6e9fb;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    background: var(--btn);
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: #3a44e0;
+}
+
+.btn.outline {
+    background: transparent;
+    border: 1px solid #39417b;
+    color: #dfe6ff;
+}
+
+.btn.outline:hover {
+    background: rgba(255,255,255,0.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star');
+    const ratingInput = document.getElementById('rating-input');
+    let selectedRating = 0;
+    
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const value = parseInt(this.dataset.value);
+            selectedRating = value;
+            ratingInput.value = value;
+            
+            stars.forEach((s, index) => {
+                if (index < value) {
+                    s.textContent = '★';
+                    s.classList.add('active');
+                } else {
+                    s.textContent = '☆';
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+    
+    const form = document.getElementById('review-form');
+    const submitBtn = document.getElementById('submit-review');
+    const resultDiv = document.getElementById('result-message');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (selectedRating === 0) {
+            alert('Пожалуйста, поставьте оценку');
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
+        
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('/submit-review', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                resultDiv.innerHTML = `<div style="color: lightgreen; padding: 10px; background: #1a3a1a; border-radius: 6px;">✅ ${result.message}</div>`;
+                setTimeout(() => {
+                    window.location.href = `/quest/${{{ quest.id }}}/reviews`;
+                }, 2000);
+            } else {
+                resultDiv.innerHTML = `<div style="color: lightpink; padding: 10px; background: #3a1a1a; border-radius: 6px;">❌ ${result.message}</div>`;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Отправить отзыв';
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<div style="color: lightpink; padding: 10px; background: #3a1a1a; border-radius: 6px;">❌ Ошибка сети</div>`;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить отзыв';
+        }
+    });
+});
+</script>
+{% endblock %}

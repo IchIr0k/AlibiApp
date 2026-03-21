@@ -17,13 +17,15 @@ def get_db():
         db.close()
 
 
-# --- Password utils ---
+# --- Password utils (без хэширования) ---
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """ВОЗВРАЩАЕТ ПАРОЛЬ В ОТКРЫТОМ ВИДЕ (НЕБЕЗОПАСНО!)"""
+    return password  # Сохраняем пароль как есть
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """СРАВНИВАЕТ ПАРОЛИ В ОТКРЫТОМ ВИДЕ (НЕБЕЗОПАСНО!)"""
+    return plain == hashed  # Простое сравнение строк
 
 
 # --- Current user ---

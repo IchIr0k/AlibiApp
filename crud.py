@@ -9,6 +9,7 @@ def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None
     query = db.query(models.Quest).filter(models.Quest.is_active == True)
 
     if filters:
+        # Поиск по тексту
         if filters.get("q"):
             search = f"%{filters['q']}%"
             query = query.filter(
@@ -18,18 +19,30 @@ def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None
                 )
             )
 
+        # Фильтр по жанрам - ИСПРАВЛЕНО: ищем квесты, содержащие ЛЮБОЙ из выбранных жанров
         if filters.get("genre"):
-            genres = [g.strip() for g in filters["genre"].split(",")] if isinstance(filters["genre"], str) else filters[
-                "genre"]
-            genre_filters = [models.Quest.genre.ilike(f"%{genre}%") for genre in genres]
-            query = query.filter(and_(*genre_filters))
+            genres = filters["genre"]
+            # Если жанры переданы как список (несколько чекбоксов)
+            if isinstance(genres, list):
+                genre_filters = []
+                for genre in genres:
+                    # Ищем квесты, у которых в поле genre есть этот жанр
+                    genre_filters.append(models.Quest.genre.ilike(f"%{genre}%"))
+                # Используем OR для поиска любого из жанров
+                query = query.filter(or_(*genre_filters))
+            else:
+                # Если передан один жанр как строка
+                query = query.filter(models.Quest.genre.ilike(f"%{genres}%"))
 
+        # Фильтр по сложности
         if filters.get("difficulty"):
-            difficulties = [d.strip() for d in filters["difficulty"].split(",")] if isinstance(filters["difficulty"],
-                                                                                               str) else filters[
-                "difficulty"]
-            query = query.filter(models.Quest.difficulty.in_(difficulties))
+            difficulties = filters["difficulty"]
+            if isinstance(difficulties, list):
+                query = query.filter(models.Quest.difficulty.in_(difficulties))
+            else:
+                query = query.filter(models.Quest.difficulty == difficulties)
 
+        # Фильтр по количеству игроков
         if filters.get("players"):
             try:
                 p = int(filters["players"])
@@ -37,6 +50,7 @@ def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None
             except:
                 pass
 
+        # Фильтр по уровню страха
         if filters.get("fear_level"):
             try:
                 fear = int(filters["fear_level"])
@@ -44,6 +58,7 @@ def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None
             except:
                 pass
 
+        # Сортировка
         if filters.get("sort"):
             if filters["sort"] == "price_low":
                 query = query.order_by(models.Quest.price.asc())
@@ -80,13 +95,12 @@ def get_booked_slots_for_date(db: Session, quest_id: int, date_str: str):
     try:
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
 
-        # Ищем бронирования через расписание
         bookings = db.query(models.Booking).join(
             models.Schedule, models.Booking.schedule_id == models.Schedule.id
         ).filter(
             models.Schedule.quest_id == quest_id,
             models.Schedule.schedule_date == target_date,
-            models.Booking.status_id != 3  # не cancelled
+            models.Booking.status_id != 3
         ).all()
 
         return [b.schedule.start_time.strftime("%H:%M") for b in bookings if b.schedule]
@@ -95,21 +109,19 @@ def get_booked_slots_for_date(db: Session, quest_id: int, date_str: str):
         return []
 
 
-def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot: str):
+def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot: str,
+                   payment_method: str, prepayment: int = None):
     try:
-        # Парсим дату и время
         booking_datetime = datetime.strptime(f"{date} {timeslot}", "%Y-%m-%d %H:%M")
         booking_date = booking_datetime.date()
         booking_time = booking_datetime.time()
 
-        # Получаем пользователя и квест
         user = db.query(models.User).filter(models.User.id == user_id).first()
         quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
 
         if not user or not quest:
             return None
 
-        # Проверяем, есть ли уже слот в расписании
         schedule = db.query(models.Schedule).filter(
             models.Schedule.quest_id == quest_id,
             models.Schedule.schedule_date == booking_date,
@@ -117,7 +129,6 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
             models.Schedule.is_available == True
         ).first()
 
-        # Если слота нет, создаем его
         if not schedule:
             end_time = (booking_datetime + timedelta(hours=1)).time()
             schedule = models.Schedule(
@@ -125,36 +136,38 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
                 schedule_date=booking_date,
                 start_time=booking_time,
                 end_time=end_time,
-                max_slots=2,  # Максимум 2 бронирования на слот
+                max_slots=2,
                 booked_slots=0,
                 is_available=True
             )
             db.add(schedule)
             db.flush()
 
-        # Проверяем, есть ли свободные места
         if schedule.booked_slots >= schedule.max_slots:
             print(f"Слот занят: booked_slots={schedule.booked_slots}, max_slots={schedule.max_slots}")
             return None
 
-        # Создаем бронирование
+        if prepayment is None:
+            prepayment = quest.price // 2
+
         booking = models.Booking(
             user_id=user_id,
             quest_id=quest_id,
             schedule_id=schedule.id,
-            status_id=1,  # pending
+            status_id=1,
             booking_date_time=booking_datetime,
             participants_count=2,
             total_price=quest.price,
+            prepayment=prepayment,
+            payment_method=payment_method,
+            payment_status='prepayment_pending',
             customer_name=user.username,
-            customer_phone=user.phone or "Не указан",
-            customer_email=user.email,
-            payment_status='pending'
+            customer_phone="Не указан",
+            customer_email=user.email
         )
 
         db.add(booking)
         db.flush()
-
         db.commit()
         db.refresh(booking)
         return booking
@@ -183,7 +196,6 @@ def get_all_bookings(db: Session):
 
 
 def delete_booking(db: Session, booking_id: int):
-    """Удаляет бронирование из БД"""
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if booking:
         db.delete(booking)
@@ -193,20 +205,16 @@ def delete_booking(db: Session, booking_id: int):
 
 
 def delete_quest(db: Session, quest_id: int):
-    """ПОЛНОСТЬЮ УДАЛЯЕТ квест из БД вместе со связанными записями"""
     quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
     if quest:
-        # Сначала удаляем все связанные бронирования
         bookings = db.query(models.Booking).filter(models.Booking.quest_id == quest_id).all()
         for booking in bookings:
             db.delete(booking)
 
-        # Удаляем все связанное расписание
         schedules = db.query(models.Schedule).filter(models.Schedule.quest_id == quest_id).all()
         for schedule in schedules:
             db.delete(schedule)
 
-        # Удаляем сам квест
         db.delete(quest)
         db.commit()
         return True
@@ -214,12 +222,10 @@ def delete_quest(db: Session, quest_id: int):
 
 
 def delete_quest_force(db: Session, quest_id: int):
-    """Принудительно удаляет квест даже с бронированиями"""
     return delete_quest(db, quest_id)
 
 
 def get_available_schedules(db: Session, quest_id: int, date_from: date = None):
-    """Получить доступные слоты для квеста"""
     if not date_from:
         date_from = datetime.now().date()
 

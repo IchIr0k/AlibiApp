@@ -4,6 +4,31 @@
 <div class="container">
     <h2>Панель администратора</h2>
 
+    <!-- Статистика -->
+    <div class="admin-stats">
+        <div class="stats-card">
+            <div class="stats-icon">🎮</div>
+            <div class="stats-info">
+                <div class="stats-number">{{ quests|length }}</div>
+                <div class="stats-label">Всего квестов</div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon">📅</div>
+            <div class="stats-info">
+                <div class="stats-number">{{ quest_bookings|length }}</div>
+                <div class="stats-label">Всего бронирований</div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-icon">👥</div>
+            <div class="stats-info">
+                <div class="stats-number">{{ active_users_count }}</div>
+                <div class="stats-label">Активных пользователей</div>
+            </div>
+        </div>
+    </div>
+
     <div class="admin-controls">
         <a href="/admin/add" class="btn">Добавить квест</a>
         <a href="/admin/bookings" class="btn outline">Управление бронированиями</a>
@@ -89,6 +114,51 @@
 </div>
 
 <style>
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, var(--card), #1a2244);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid #39417b;
+    transition: all 0.3s;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    border-color: var(--accent);
+}
+
+.stats-icon {
+    font-size: 3em;
+}
+
+.stats-info {
+    flex: 1;
+}
+
+.stats-number {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.stats-label {
+    color: var(--muted);
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
 .admin-controls {
     display: flex;
     gap: 12px;
@@ -232,6 +302,33 @@
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .admin-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-card {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .admin-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .thumb img,
+    .card-placeholder.small {
+        width: 150px;
+        height: 100px;
+    }
+
+    .booking-badge {
+        display: inline-block;
+        margin: 5px 0;
+    }
 }
 </style>
 

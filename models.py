@@ -10,9 +10,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
-    phone = Column(String(20))
-    first_name = Column(String(100))
-    last_name = Column(String(100))
     hashed_password = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
@@ -22,7 +19,7 @@ class User(Base):
 
     # Relationships
     bookings = relationship("Booking", back_populates="user")
-    reviews = relationship("QuestReview", back_populates="user")
+    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
 
@@ -39,17 +36,17 @@ class Quest(Base):
     fear_level = Column(Integer, nullable=False)
     min_players = Column(Integer, nullable=False, default=2)
     max_players = Column(Integer, nullable=False, default=6)
+    address = Column(String(255), nullable=False, default="Адрес не указан")
     image_path = Column(String(255))
     price = Column(Integer, default=2000)
     is_active = Column(Boolean, default=True)
-    organizer_email = Column(String(120), nullable=False, default='alibi@mail.ru')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     schedules = relationship("Schedule", back_populates="quest", cascade="all, delete-orphan")
     bookings = relationship("Booking", back_populates="quest")
-    reviews = relationship("QuestReview", back_populates="quest")
+    reviews = relationship("Review", back_populates="quest", cascade="all, delete-orphan")
 
 
 class BookingStatus(Base):
@@ -93,12 +90,13 @@ class Booking(Base):
     booking_date_time = Column(DateTime(timezone=True), nullable=False)
     participants_count = Column(Integer, nullable=False, default=2)
     total_price = Column(Integer, nullable=False, default=2000)
+    prepayment = Column(Integer, nullable=False, default=0)
+    payment_method = Column(String(50), nullable=False, default='card')
+    payment_status = Column(String(30), default='prepayment_pending')
     customer_name = Column(String(200), nullable=False)
     customer_phone = Column(String(20), nullable=False)
     customer_email = Column(String(120))
     special_requests = Column(Text)
-    payment_method = Column(String(50))
-    payment_status = Column(String(30), default='pending')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -106,7 +104,24 @@ class Booking(Base):
     quest = relationship("Quest", back_populates="bookings")
     schedule = relationship("Schedule", back_populates="bookings")
     status = relationship("BookingStatus", back_populates="bookings")
-    review = relationship("QuestReview", back_populates="booking", uselist=False)
+    review = relationship("Review", back_populates="booking", uselist=False, cascade="all, delete-orphan")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    quest_id = Column(Integer, ForeignKey("quests.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False, unique=True)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    quest = relationship("Quest", back_populates="reviews")
+    user = relationship("User", back_populates="reviews")
+    booking = relationship("Booking", back_populates="review")
 
 
 class QuestReview(Base):
@@ -125,9 +140,9 @@ class QuestReview(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    quest = relationship("Quest", back_populates="reviews")
-    user = relationship("User", back_populates="reviews")
-    booking = relationship("Booking", back_populates="review")
+    quest = relationship("Quest", back_populates="reviews_old")
+    user = relationship("User", back_populates="reviews_old")
+    booking = relationship("Booking", back_populates="review_old")
 
 
 class AuditLog(Base):
@@ -138,8 +153,8 @@ class AuditLog(Base):
     action_type = Column(String(50), nullable=False)
     table_name = Column(String(100), nullable=False)
     record_id = Column(Integer)
-    old_values = Column(Text)  # JSON в вашей БД, но в модели используем Text для простоты
-    new_values = Column(Text)  # JSON в вашей БД
+    old_values = Column(Text)
+    new_values = Column(Text)
     ip_address = Column(String(45))
     user_agent = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -161,3 +176,9 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")
+
+
+# Добавляем недостающие relationship в Quest и User
+Quest.reviews_old = relationship("QuestReview", back_populates="quest", cascade="all, delete-orphan")
+User.reviews_old = relationship("QuestReview", back_populates="user", cascade="all, delete-orphan")
+Booking.review_old = relationship("QuestReview", back_populates="booking", uselist=False)

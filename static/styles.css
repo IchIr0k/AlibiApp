@@ -54,7 +54,7 @@ body{font-family:Inter, system-ui, Arial, sans-serif; background:var(--bg); colo
 .stars {
   display: flex;
   gap: 4px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .stars span {
@@ -76,7 +76,7 @@ body{font-family:Inter, system-ui, Arial, sans-serif; background:var(--bg); colo
 .players-selector {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .players-selector span {
@@ -114,18 +114,24 @@ body{font-family:Inter, system-ui, Arial, sans-serif; background:var(--bg); colo
 .filters label {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   cursor: pointer;
+  line-height: 1.2;
 }
 
 .filters h3 {
   color: #e6e9fb;
-  margin: 20px 0 12px 0;
-  font-size: 1em;
+  margin: 4px 0 4px 0;
+  font-size: 0.95em;
+  font-weight: 600;
 }
 
 .filters h3:first-child {
   margin-top: 0;
+}
+
+.filters h3:not(:first-child) {
+  margin-top: 8px;
 }
 
 /* Стили для сортировки */
@@ -238,4 +244,15 @@ body{font-family:Inter, system-ui, Arial, sans-serif; background:var(--bg); colo
   .filters {
     width: 100%;
   }
+}
+/* Стили для подвала */
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+  opacity: 0.8;
 }
