@@ -32,6 +32,8 @@
     <div class="admin-controls">
         <a href="/admin/add" class="btn">Добавить квест</a>
         <a href="/admin/bookings" class="btn outline">Управление бронированиями</a>
+        <a href="/admin/report/quests" class="btn report-quests">📊 Скачать отчет по квестам</a>
+        <a href="/admin/report/word" class="btn outline">📄 Скачать отчет по бронированиям</a>
     </div>
 
     {% if error %}
@@ -75,7 +77,9 @@
         {% for q in quests %}
         <div class="admin-item {% if blocked_quest_id == q.id %}highlighted{% endif %}" id="quest-{{ q.id }}">
             <div class="thumb">
-                {% if q.image_path %}
+                {% if q.image_data %}
+                <img src="/api/quest-image/{{ q.id }}" alt="{{ q.title }}">
+                {% elif q.image_path %}
                 <img src="/static/{{ q.image_path }}" alt="{{ q.title }}">
                 {% else %}
                 <div class="card-placeholder small">🕵️‍♂️</div>
@@ -168,6 +172,15 @@
 
 .admin-controls .btn {
     padding: 10px 16px;
+}
+
+.btn.report-quests {
+    background: #28a745;
+    color: white;
+}
+
+.btn.report-quests:hover {
+    background: #218838;
 }
 
 .admin-list {

@@ -3,7 +3,9 @@
 {% block content %}
 <div class="detail">
   <div class="detail-left">
-    {% if quest.image_path %}
+    {% if quest.image_data %}
+    <img src="/api/quest-image/{{ quest.id }}" alt="{{ quest.title }}" class="detail-image">
+    {% elif quest.image_path %}
     <img src="/static/{{ quest.image_path }}" alt="{{ quest.title }}" class="detail-image">
     {% else %}
     <div class="detail-placeholder">🕵️‍♂️</div>

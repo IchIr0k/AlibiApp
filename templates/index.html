@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Применение фильтров - ИСПРАВЛЕНО!
+    // Применение фильтров - ИСПРАВЛЕНО: передаем все выбранные значения как списки
     const applyBtn = document.getElementById("apply-filters");
     if (applyBtn) {
         applyBtn.addEventListener("click", function() {
@@ -255,6 +255,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 params.append("players", players);
             }
 
+            // Добавляем сортировку если есть
+            const sortSelect = document.getElementById('sort-select');
+            if (sortSelect && sortSelect.value) {
+                params.append("sort", sortSelect.value);
+            }
+
             // Переходим на отфильтрованную страницу
             window.location.href = "/?" + params.toString();
         });
@@ -265,8 +271,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sortSelect) {
         sortSelect.addEventListener('change', function() {
             const url = new URL(window.location);
-            url.searchParams.set('sort', this.value);
-            window.location.href = url.toString();
+            // Сохраняем все существующие параметры
+            const existingParams = new URLSearchParams(url.search);
+            existingParams.set('sort', this.value);
+            window.location.href = "/?" + existingParams.toString();
         });
     }
 
@@ -311,6 +319,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const checkbox = document.querySelector(`input[name="difficulty"][value="${difficulty}"]`);
             if (checkbox) checkbox.checked = true;
         });
+
+        // Сортировка
+        const sort = urlParams.get('sort');
+        if (sort && sortSelect) {
+            sortSelect.value = sort;
+        }
     }
 
     initFromURL();

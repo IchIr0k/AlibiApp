@@ -38,6 +38,7 @@ class Quest(Base):
     max_players = Column(Integer, nullable=False, default=6)
     address = Column(String(255), nullable=False, default="Адрес не указан")
     image_path = Column(String(255))
+    image_data = Column(Text)  # Добавлено поле для хранения base64 изображения
     price = Column(Integer, default=2000)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

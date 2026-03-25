@@ -29,10 +29,10 @@
             
             <div class="form-buttons">
                 <button type="submit" class="btn" id="submit-review">Отправить отзыв</button>
-                <a href="/quest/{{ quest.id }}" class="btn outline">Отмена</a>
+                <a href="/quest/{{ quest.id }}/reviews" class="btn outline">Отмена</a>
             </div>
         </form>
-        
+
         <div id="result-message" style="margin-top: 15px;"></div>
     </div>
 </div>
@@ -138,13 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const stars = document.querySelectorAll('.star');
     const ratingInput = document.getElementById('rating-input');
     let selectedRating = 0;
-    
+
     stars.forEach(star => {
         star.addEventListener('click', function() {
             const value = parseInt(this.dataset.value);
             selectedRating = value;
             ratingInput.value = value;
-            
+
             stars.forEach((s, index) => {
                 if (index < value) {
                     s.textContent = '★';
@@ -156,35 +156,35 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-    
+
     const form = document.getElementById('review-form');
     const submitBtn = document.getElementById('submit-review');
     const resultDiv = document.getElementById('result-message');
-    
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         if (selectedRating === 0) {
             alert('Пожалуйста, поставьте оценку');
             return;
         }
-        
+
         submitBtn.disabled = true;
         submitBtn.textContent = 'Отправка...';
-        
+
         try {
             const formData = new FormData(form);
             const response = await fetch('/submit-review', {
                 method: 'POST',
                 body: formData
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok) {
                 resultDiv.innerHTML = `<div style="color: lightgreen; padding: 10px; background: #1a3a1a; border-radius: 6px;">✅ ${result.message}</div>`;
                 setTimeout(() => {
-                    window.location.href = `/quest/${{{ quest.id }}}/reviews`;
+                    window.location.href = `/quest/${ {{ quest.id }} }/reviews`;
                 }, 2000);
             } else {
                 resultDiv.innerHTML = `<div style="color: lightpink; padding: 10px; background: #3a1a1a; border-radius: 6px;">❌ ${result.message}</div>`;
@@ -192,7 +192,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.textContent = 'Отправить отзыв';
             }
         } catch (error) {
-            resultDiv.innerHTML = `<div style="color: lightpink; padding: 10px; background: #3a1a1a; border-radius: 6px;">❌ Ошибка сети</div>`;
+            console.error('Error:', error);
+            resultDiv.innerHTML = `<div style="color: lightpink; padding: 10px; background: #3a1a1a; border-radius: 6px;">❌ Ошибка сети: ${error.message}</div>`;
             submitBtn.disabled = false;
             submitBtn.textContent = 'Отправить отзыв';
         }

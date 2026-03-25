@@ -59,10 +59,12 @@
         </label>
 
         <label>Текущее изображение:<br>
-            {% if quest.image_path %}
-            <img src="/static/{{ quest.image_path }}" alt="{{ quest.title }}" style="max-width: 200px; margin: 10px 0;">
+            {% if quest.image_data %}
+                <img src="/api/quest-image/{{ quest.id }}" alt="{{ quest.title }}" style="max-width: 200px; margin: 10px 0;">
+            {% elif quest.image_path %}
+                <img src="/static/{{ quest.image_path }}" alt="{{ quest.title }}" style="max-width: 200px; margin: 10px 0;">
             {% else %}
-            <span>Нет изображения</span>
+                <span>Нет изображения</span>
             {% endif %}
         </label>
 

@@ -52,17 +52,27 @@ def get_user_bookings_for_review(db: Session, user_id: int):
 def create_review(db: Session, user_id: int, quest_id: int, booking_id: int,
                   rating: int, comment: str = None):
     """Создает отзыв на квест"""
+    from datetime import datetime
 
     # Проверяем, может ли пользователь оставить отзыв
     booking = db.query(models.Booking).filter(
         models.Booking.id == booking_id,
         models.Booking.user_id == user_id,
-        models.Booking.quest_id == quest_id,
-        models.Booking.booking_date_time < datetime.now(),
-        models.Booking.payment_status == 'prepayment_paid'
+        models.Booking.quest_id == quest_id
     ).first()
 
     if not booking:
+        print(f"Booking not found: {booking_id}")
+        return None
+
+    # Проверяем, что квест уже прошел
+    if booking.booking_date_time.replace(tzinfo=None) >= datetime.now():
+        print(f"Quest not finished yet: {booking.booking_date_time}")
+        return None
+
+    # Проверяем, что предоплата внесена
+    if booking.payment_status != 'prepayment_paid':
+        print(f"Payment not paid: {booking.payment_status}")
         return None
 
     # Проверяем, нет ли уже отзыва
@@ -71,6 +81,7 @@ def create_review(db: Session, user_id: int, quest_id: int, booking_id: int,
     ).first()
 
     if existing:
+        print(f"Review already exists for booking: {booking_id}")
         return None
 
     # Создаем отзыв

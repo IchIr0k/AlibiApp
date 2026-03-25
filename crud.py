@@ -19,27 +19,23 @@ def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None
                 )
             )
 
-        # Фильтр по жанрам - ИСПРАВЛЕНО: ищем квесты, содержащие ЛЮБОЙ из выбранных жанров
+        # Фильтр по жанрам - ищем квесты, содержащие ЛЮБОЙ из выбранных жанров
         if filters.get("genre"):
             genres = filters["genre"]
-            # Если жанры переданы как список (несколько чекбоксов)
-            if isinstance(genres, list):
+            if isinstance(genres, list) and len(genres) > 0:
                 genre_filters = []
                 for genre in genres:
-                    # Ищем квесты, у которых в поле genre есть этот жанр
                     genre_filters.append(models.Quest.genre.ilike(f"%{genre}%"))
-                # Используем OR для поиска любого из жанров
                 query = query.filter(or_(*genre_filters))
-            else:
-                # Если передан один жанр как строка
+            elif isinstance(genres, str):
                 query = query.filter(models.Quest.genre.ilike(f"%{genres}%"))
 
-        # Фильтр по сложности
+        # Фильтр по сложности - ищем квесты с ЛЮБОЙ из выбранных сложностей
         if filters.get("difficulty"):
             difficulties = filters["difficulty"]
-            if isinstance(difficulties, list):
+            if isinstance(difficulties, list) and len(difficulties) > 0:
                 query = query.filter(models.Quest.difficulty.in_(difficulties))
-            else:
+            elif isinstance(difficulties, str):
                 query = query.filter(models.Quest.difficulty == difficulties)
 
         # Фильтр по количеству игроков
