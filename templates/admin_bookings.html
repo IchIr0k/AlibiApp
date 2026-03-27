@@ -27,25 +27,6 @@
     </div>
 
     {% if bookings %}
-    <div class="stats-summary">
-      <div class="stat-summary-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-          <div class="stat-number">{{ bookings|length }}</div>
-          <div class="stat-label">всего бронирований</div>
-        </div>
-      </div>
-      {% if request.query_params.get('quest_id') %}
-      <div class="stat-summary-card filter-active">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-info">
-          <div class="stat-number">отфильтровано</div>
-          <div class="stat-label">по выбранному квесту</div>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-
     <div class="bookings-table-container">
       <table class="bookings-table">
         <thead>
@@ -78,20 +59,20 @@
             </td>
             <td class="email-cell">
               <span class="email-text">{{ booking.user.email if booking.user and booking.user.email else 'Не указан' }}</span>
-            </td>
+             </td>
             <td class="date-cell">
               <div class="date-info">
                 <span class="date-icon">📅</span>
                 <span class="date-text">{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</span>
               </div>
-            </td>
+             </td>
             <td class="status-cell">
               {% if is_past %}
               <span class="status-badge completed">✅ Завершено</span>
               {% else %}
               <span class="status-badge active">🟢 Активно</span>
               {% endif %}
-            </td>
+             </td>
             <td class="actions-cell">
               <form method="post" action="/admin/delete-booking/{{ booking.id }}" style="display: inline;">
                 <button type="submit" class="delete-booking-btn" onclick="return confirm('Вы уверены, что хотите удалить это бронирование?')">
@@ -99,8 +80,8 @@
                   Удалить
                 </button>
               </form>
-            </td>
-          </tr>
+             </td>
+           </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -235,51 +216,6 @@
 .quest-filter-select:focus {
   outline: none;
   border-color: var(--accent);
-}
-
-.stats-summary {
-  display: flex;
-  gap: 16px;
-  padding: 24px 32px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(68, 74, 247, 0.1);
-  flex-wrap: wrap;
-}
-
-.stat-summary-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  background: var(--panel);
-  border-radius: 20px;
-  border: 1px solid rgba(68, 74, 247, 0.2);
-}
-
-.stat-summary-card.filter-active {
-  background: rgba(68, 74, 247, 0.1);
-  border-color: var(--accent);
-}
-
-.stat-icon {
-  font-size: 1.5em;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-size: 1.3em;
-  font-weight: bold;
-  color: var(--accent);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.7em;
-  color: var(--muted);
 }
 
 .bookings-table-container {
@@ -501,15 +437,6 @@
 
   .quest-filter-select {
     width: 100%;
-  }
-
-  .stats-summary {
-    flex-direction: column;
-  }
-
-  .stat-summary-card {
-    width: 100%;
-    justify-content: center;
   }
 
   .bookings-table th,
