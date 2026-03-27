@@ -3,58 +3,260 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>{% block title %}Квесты{% endblock %}</title>
+  <title>{% block title %}Алиби - Квесты{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar">
       <div class="logo">
-          <img src="/static/images/logo.png" alt="Квесты" style="height: 40px;">
+          <img src="/static/images/logo.png" alt="Алиби" style="height: 45px;">
+          <span class="site-title">Алиби</span>
       </div>
       <nav>
-          <span class="site-title">Алиби</span>
-          <a href="/">Все квесты</a>
+          <a href="/" class="nav-link">🎮 Все квесты</a>
           {% if user %}
-              <a href="/my-bookings">Мои бронирования</a>
+              <a href="/my-bookings" class="nav-link">📅 Мои бронирования</a>
           {% endif %}
       </nav>
       <div class="search">
           <form id="search-form" action="/" method="get">
-              <input name="q" placeholder="Поиск..." value="{{ request.query_params.get('q','') }}">
-              <button type="submit" class="search-btn">Найти</button>
+              <input name="q" placeholder="Поиск квеста..." value="{{ request.query_params.get('q','') }}">
+              <button type="submit" class="search-btn">🔍 Найти</button>
           </form>
       </div>
       <div class="user-nav">
           {% if user %}
               {% if user.is_admin %}
-                  <span class="admin-badge">Администратор</span>
-                  <a href="/admin">Панель управления</a>
+                  <span class="admin-badge">👑 Админ</span>
+                  <a href="/admin" class="nav-link">⚙️ Панель</a>
               {% else %}
-                  <span>{{ user.username }}</span>
+                  <span class="user-greeting">👋 {{ user.username }}</span>
               {% endif %}
-              <a href="/logout">Выйти</a>
+              <a href="/logout" class="nav-link logout">🚪 Выйти</a>
           {% else %}
-              <a href="/login">Войти</a>
-              <a href="/register">Зарегистрироваться</a>
+              <a href="/login" class="nav-link">🔑 Войти</a>
+              <a href="/register" class="nav-link register">📝 Регистрация</a>
           {% endif %}
       </div>
   </header>
 
-  <main class="container">
+  <main>
     {% block content %}{% endblock %}
   </main>
 
   <footer class="footer">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-      <div style="display: flex; flex-direction: column; gap: 5px;">
-        <small>© Алиби — система бронирования квестов</small>
-        <small style="color: var(--muted);">📍 г.Москва, ул.Квестовая, д.88</small>
+    <div class="footer-content">
+      <div class="footer-info">
+        <div class="footer-logo">
+          <span class="footer-title">Алиби</span>
+          <span class="footer-tagline">система бронирования квестов</span>
+        </div>
+        <div class="footer-contacts">
+          <p>📍 г. Москва, ул. Квестовая, д. 88</p>
+          <p>📧 <a href="mailto:alibi.quest@mail.ru">alibi.quest@mail.ru</a></p>
+        </div>
       </div>
-      <small style="color: var(--accent);">
-        📧 По вопросам: <a href="mailto:alibi.quest@mail.ru" style="color: var(--accent); text-decoration: none;">alibi.quest@mail.ru</a>
-      </small>
+      <div class="footer-copyright">
+        <small>© 2026 Алиби. Все права защищены.</small>
+      </div>
     </div>
   </footer>
 </body>
 </html>
+
+<style>
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 48px;
+    background: linear-gradient(135deg, #0a0f2b 0%, #0b1233 100%);
+    border-bottom: 1px solid rgba(68, 74, 247, 0.2);
+    flex-wrap: wrap;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.site-title {
+    font-weight: 700;
+    font-size: 1.5em;
+    background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-link {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e6e9fb;
+    transform: translateY(-2px);
+}
+
+.nav-link.logout:hover {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+}
+
+.nav-link.register {
+    background: linear-gradient(135deg, var(--btn), #5a64ff);
+    color: white;
+}
+
+.nav-link.register:hover {
+    background: linear-gradient(135deg, #3a44e0, #4a54f5);
+    transform: translateY(-2px);
+}
+
+.user-greeting {
+    color: #e6e9fb;
+    font-weight: 500;
+}
+
+.admin-badge {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: #1a1a2e;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: bold;
+}
+
+.search form {
+    display: flex;
+    gap: 8px;
+}
+
+.search input {
+    background: rgba(12, 19, 48, 0.8);
+    border: 1px solid #2a2f4e;
+    padding: 10px 16px;
+    border-radius: 12px;
+    color: #dfe6ff;
+    width: 240px;
+    transition: all 0.3s;
+}
+
+.search input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(68, 74, 247, 0.2);
+}
+
+.search-btn {
+    background: linear-gradient(135deg, var(--btn), #5a64ff);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.search-btn:hover {
+    background: linear-gradient(135deg, #3a44e0, #4a54f5);
+    transform: translateY(-2px);
+}
+
+.footer {
+    background: #0a0f2b;
+    border-top: 1px solid rgba(68, 74, 247, 0.2);
+    padding: 32px 48px 24px;
+    margin-top: 48px;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 32px;
+    margin-bottom: 24px;
+}
+
+.footer-logo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.footer-title {
+    font-size: 1.3em;
+    font-weight: bold;
+    background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.footer-tagline {
+    color: var(--muted);
+    font-size: 0.85em;
+}
+
+.footer-contacts p {
+    margin: 6px 0;
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+.footer-contacts a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.footer-contacts a:hover {
+    text-decoration: underline;
+}
+
+.footer-copyright {
+    text-align: center;
+    padding-top: 24px;
+    border-top: 1px solid rgba(68, 74, 247, 0.1);
+    color: var(--muted);
+    font-size: 0.8em;
+}
+
+@media (max-width: 768px) {
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+    }
+
+    .search form {
+        width: 100%;
+    }
+
+    .search input {
+        flex: 1;
+    }
+
+    .user-nav {
+        justify-content: center;
+    }
+
+    .footer-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>

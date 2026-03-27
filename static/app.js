@@ -4,7 +4,9 @@ document.addEventListener("DOMContentLoaded", function() {
   if (loadBtn) {
     loadBtn.addEventListener("click", async () => {
       const btn = loadBtn;
-      const skip = parseInt(btn.dataset.skip || "0");
+      let skip = parseInt(btn.dataset.skip || "0");
+
+      // Получаем текущие параметры из URL
       const params = new URLSearchParams(window.location.search);
       params.set("skip", skip);
 
@@ -22,19 +24,59 @@ document.addEventListener("DOMContentLoaded", function() {
 
           const cardsGrid = document.querySelector(".cards-grid");
           if (newGrid && cardsGrid) {
-            // Добавляем новые карточки
-            const newCards = newGrid.innerHTML;
-            cardsGrid.insertAdjacentHTML('beforeend', newCards);
+            // Получаем текущие ID квестов, чтобы не дублировать
+            const existingIds = new Set();
+            document.querySelectorAll('.card').forEach(card => {
+              const link = card.querySelector('.btn-primary');
+              if (link) {
+                const href = link.getAttribute('href');
+                const match = href.match(/\/quest\/(\d+)/);
+                if (match) existingIds.add(parseInt(match[1]));
+              }
+            });
 
-            const addedCount = (newGrid.innerHTML.match(/class="card"/g) || []).length;
+            // Получаем все новые карточки из ответа
+            const newCards = newGrid.querySelectorAll('.card');
+            let addedCount = 0;
+
+            // Создаем массив для хранения новых карточек
+            const cardsToAdd = [];
+
+            newCards.forEach(newCard => {
+              const link = newCard.querySelector('.btn-primary');
+              if (link) {
+                const href = link.getAttribute('href');
+                const match = href.match(/\/quest\/(\d+)/);
+                if (match) {
+                  const questId = parseInt(match[1]);
+                  if (!existingIds.has(questId)) {
+                    cardsToAdd.push(newCard.cloneNode(true));
+                    addedCount++;
+                    existingIds.add(questId);
+                  }
+                }
+              }
+            });
+
+            // Добавляем все новые карточки в конец
+            cardsToAdd.forEach(card => {
+              cardsGrid.appendChild(card);
+            });
+
+            // Обновляем skip на основе реально добавленных квестов
             const newSkip = skip + addedCount;
             btn.dataset.skip = newSkip;
-            btn.textContent = "Посмотреть ещё";
-            btn.disabled = false;
 
-            // Скрываем кнопку если загружено меньше чем лимит
-            if (addedCount === 0 || addedCount < 15) {
+            // Проверяем, сколько всего квестов на странице
+            const totalCards = document.querySelectorAll('.card').length;
+
+            // Если добавилось меньше 15 или всего квестов кратно 15, проверяем возможность загрузки еще
+            if (addedCount < 15) {
+              // Если добавилось меньше 15, значит больше нет квестов
               btn.style.display = 'none';
+            } else {
+              btn.textContent = "Посмотреть ещё";
+              btn.disabled = false;
             }
           } else {
             btn.textContent = "Нет данных";
@@ -62,7 +104,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const value = parseInt(star.getAttribute("data-value"));
         fearInput.value = value;
 
-        // Обновляем визуальное отображение
         fearStars.forEach((s, index) => {
           if (index < value) {
             s.classList.add("active");
@@ -88,7 +129,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const value = parseInt(circle.getAttribute("data-value"));
         playersInput.value = value;
 
-        // Обновляем визуальное отображение
         playerCircles.forEach((c, index) => {
           if (index < value) {
             c.classList.add("active");
@@ -115,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Применение фильтров - ИСПРАВЛЕНО
+  // Применение фильтров
   const applyFilters = document.getElementById("apply-filters");
   if (applyFilters) {
     applyFilters.addEventListener("click", () => {
@@ -123,34 +163,26 @@ document.addEventListener("DOMContentLoaded", function() {
       const data = new FormData(form);
       const params = new URLSearchParams();
 
-      // Собираем все жанры
       const genreValues = data.getAll("genre");
-      console.log("Selected genres:", genreValues);
+      const difficultyValues = data.getAll("difficulty");
+      const fearLevel = data.get("fear_level");
+      const players = data.get("players");
+
       genreValues.forEach(genre => {
         if (genre) params.append("genre", genre);
       });
 
-      // Собираем все сложности
-      const difficultyValues = data.getAll("difficulty");
-      console.log("Selected difficulties:", difficultyValues);
       difficultyValues.forEach(difficulty => {
         if (difficulty) params.append("difficulty", difficulty);
       });
 
-      // Уровень страха
-      const fearLevel = data.get("fear_level");
       if (fearLevel) params.append("fear_level", fearLevel);
-
-      // Количество игроков
-      const players = data.get("players");
       if (players) params.append("players", players);
 
-      // Сортировка
       if (sortSelect && sortSelect.value) {
         params.append("sort", sortSelect.value);
       }
 
-      console.log("Final URL params:", params.toString());
       window.location.href = "/?" + params.toString();
     });
   }
@@ -158,9 +190,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // Инициализация фильтров из URL параметров
   function initFiltersFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
-    console.log("URL params:", urlParams.toString());
 
-    // Уровень страха
     const fearLevel = urlParams.get('fear_level');
     if (fearLevel && fearInput) {
       fearInput.value = fearLevel;
@@ -173,7 +203,6 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    // Количество игроков
     const players = urlParams.get('players');
     if (players && playersInput) {
       playersInput.value = players;
@@ -186,23 +215,18 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    // Чекбоксы жанров - получаем ВСЕ значения
     const genres = urlParams.getAll('genre');
-    console.log("Genres from URL:", genres);
     genres.forEach(genre => {
       const checkbox = document.querySelector(`input[name="genre"][value="${genre}"]`);
       if (checkbox) checkbox.checked = true;
     });
 
-    // Чекбоксы сложности - получаем ВСЕ значения
     const difficulties = urlParams.getAll('difficulty');
-    console.log("Difficulties from URL:", difficulties);
     difficulties.forEach(difficulty => {
       const checkbox = document.querySelector(`input[name="difficulty"][value="${difficulty}"]`);
       if (checkbox) checkbox.checked = true;
     });
 
-    // Сортировка
     const sort = urlParams.get('sort');
     if (sort && sortSelect) {
       sortSelect.value = sort;

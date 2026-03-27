@@ -1,204 +1,525 @@
 {% extends "base.html" %}
 {% block title %}Управление бронированиями{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Управление бронированиями</h2>
-
-    <div class="admin-controls">
-        <a href="/admin" class="btn outline">← Назад к квестам</a>
-        <div class="filters">
-            <select id="quest-filter" onchange="filterByQuest()">
-                <option value="">Все квесты</option>
-                {% for quest in quests %}
-                <option value="{{ quest.id }}" {% if request.query_params.get('quest_id') == quest.id|string %}selected{% endif %}>
-                    {{ quest.title }}
-                </option>
-                {% endfor %}
-            </select>
+<div class="bookings-admin-page">
+  <div class="bookings-admin-container">
+    <div class="page-header">
+      <div class="header-left">
+        <a href="/admin" class="back-link">← Назад к панели</a>
+        <div class="header-content">
+          <div class="header-icon">📅</div>
+          <div class="header-text">
+            <h1>Управление бронированиями</h1>
+            <p>Просмотр и управление всеми бронями пользователей</p>
+          </div>
         </div>
+      </div>
+      <div class="filter-control">
+        <select id="quest-filter" class="quest-filter-select" onchange="filterByQuest()">
+          <option value="">📋 Все квесты</option>
+          {% for quest in quests %}
+          <option value="{{ quest.id }}" {% if request.query_params.get('quest_id') == quest.id|string %}selected{% endif %}>
+            🎮 {{ quest.title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
 
     {% if bookings %}
-    <div class="bookings-table">
-        <table>
-            <thead>
-                <tr>
-                    <th>Квест</th>
-                    <th>Пользователь</th>
-                    <th>Email</th>
-                    <th>Дата и время</th>
-                    <th>Статус</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in bookings %}
-                <tr>
-                    <td>
-                        <strong>{{ booking.quest.title }}</strong>
-                    </td>
-                    <td>{{ booking.user.username if booking.user else 'Неизвестно' }}</td>
-                    <td>{{ booking.user.email if booking.user and booking.user.email else 'Не указан' }}</td>
-                    <td>{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</td>
-                    <td>
-                        {# Преобразуем datetime с часовым поясом в наивный для сравнения #}
-                        {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
-                        {% set current_time = now() %}
-                        {% set is_past = booking_time < current_time %}
-
-                        {% if is_past %}
-                        <span class="status past">Завершено</span>
-                        {% else %}
-                        <span class="status upcoming">Активно</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form method="post" action="/admin/delete-booking/{{ booking.id }}" style="display: inline;">
-                            <button type="submit" class="btn danger small" onclick="return confirm('Вы уверены, что хотите удалить это бронирование?')">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="stats-summary">
+      <div class="stat-summary-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <div class="stat-number">{{ bookings|length }}</div>
+          <div class="stat-label">всего бронирований</div>
+        </div>
+      </div>
+      {% if request.query_params.get('quest_id') %}
+      <div class="stat-summary-card filter-active">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-info">
+          <div class="stat-number">отфильтровано</div>
+          <div class="stat-label">по выбранному квесту</div>
+        </div>
+      </div>
+      {% endif %}
     </div>
 
-    <div class="stats" style="margin-top: 20px; padding: 15px; background: var(--card); border-radius: 8px;">
-        <strong>Статистика:</strong>
-        Всего бронирований: {{ bookings|length }}
-        {% if request.query_params.get('quest_id') %}
-        • Отфильтровано по квесту
-        {% endif %}
+    <div class="bookings-table-container">
+      <table class="bookings-table">
+        <thead>
+          <tr>
+            <th>🎭 Квест</th>
+            <th>👤 Пользователь</th>
+            <th>📧 Email</th>
+            <th>📅 Дата и время</th>
+            <th>✅ Статус</th>
+            <th>⚙️ Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in bookings %}
+          {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
+          {% set current_time = now() %}
+          {% set is_past = booking_time < current_time %}
+          <tr class="booking-row {% if is_past %}past-booking{% endif %}">
+            <td class="quest-cell">
+              <div class="quest-info-cell">
+                <span class="quest-icon">🎭</span>
+                <span class="quest-title">{{ booking.quest.title }}</span>
+              </div>
+            </td>
+            <td class="user-cell">
+              <div class="user-info">
+                <span class="user-avatar">👤</span>
+                <span class="username">{{ booking.user.username if booking.user else 'Неизвестно' }}</span>
+              </div>
+            </td>
+            <td class="email-cell">
+              <span class="email-text">{{ booking.user.email if booking.user and booking.user.email else 'Не указан' }}</span>
+            </td>
+            <td class="date-cell">
+              <div class="date-info">
+                <span class="date-icon">📅</span>
+                <span class="date-text">{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</span>
+              </div>
+            </td>
+            <td class="status-cell">
+              {% if is_past %}
+              <span class="status-badge completed">✅ Завершено</span>
+              {% else %}
+              <span class="status-badge active">🟢 Активно</span>
+              {% endif %}
+            </td>
+            <td class="actions-cell">
+              <form method="post" action="/admin/delete-booking/{{ booking.id }}" style="display: inline;">
+                <button type="submit" class="delete-booking-btn" onclick="return confirm('Вы уверены, что хотите удалить это бронирование?')">
+                  <span class="btn-icon">🗑️</span>
+                  Удалить
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="stats-footer">
+      <div class="footer-stats">
+        <span class="stat-badge">📊 Всего: {{ bookings|length }}</span>
+        {% set active_count = 0 %}
+        {% for booking in bookings %}
+          {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
+          {% if booking_time >= now() %}
+            {% set active_count = active_count + 1 %}
+          {% endif %}
+        {% endfor %}
+        <span class="stat-badge active">🟢 Активных: {{ active_count }}</span>
+        <span class="stat-badge completed">✅ Завершённых: {{ bookings|length - active_count }}</span>
+      </div>
     </div>
 
     {% else %}
-    <div class="no-bookings">
-        <p>Нет бронирований.</p>
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>Нет бронирований</h3>
+      <p>Пока никто не забронировал ни одного квеста</p>
+      <a href="/admin" class="empty-action-btn">← Вернуться к квестам</a>
     </div>
     {% endif %}
+  </div>
 </div>
 
 <style>
-.admin-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
+.bookings-admin-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px;
 }
 
-.filters select {
-    background: var(--panel);
-    border: 1px solid #39417b;
-    color: #e6e9fb;
-    padding: 8px 12px;
-    border-radius: 6px;
-    min-width: 200px;
+.bookings-admin-container {
+  background: var(--card);
+  border-radius: 32px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+  overflow: hidden;
 }
 
-.filters select:hover {
-    border-color: #5d67ff;
+.page-header {
+  background: linear-gradient(135deg, #1a1f3a, #121734);
+  padding: 28px 32px;
+  border-bottom: 1px solid rgba(68, 74, 247, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
-.filters select:focus {
-    outline: none;
-    border-color: var(--accent);
+.header-left {
+  flex: 1;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85em;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 30px;
+  transition: all 0.3s;
+  margin-bottom: 20px;
+}
+
+.back-link:hover {
+  color: var(--accent);
+  transform: translateX(-4px);
+  background: rgba(68, 74, 247, 0.2);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-icon {
+  font-size: 3em;
+  background: rgba(68, 74, 247, 0.2);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+}
+
+.header-text h1 {
+  margin: 0 0 6px 0;
+  font-size: 1.6em;
+  background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-text p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.filter-control {
+  margin-top: 40px;
+}
+
+.quest-filter-select {
+  background: var(--panel);
+  border: 1px solid #2a2f4e;
+  color: #e6e9fb;
+  padding: 10px 20px;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 0.9em;
+  min-width: 220px;
+  transition: all 0.3s;
+}
+
+.quest-filter-select:hover {
+  border-color: var(--accent);
+}
+
+.quest-filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.stats-summary {
+  display: flex;
+  gap: 16px;
+  padding: 24px 32px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(68, 74, 247, 0.1);
+  flex-wrap: wrap;
+}
+
+.stat-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-radius: 20px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.stat-summary-card.filter-active {
+  background: rgba(68, 74, 247, 0.1);
+  border-color: var(--accent);
+}
+
+.stat-icon {
+  font-size: 1.5em;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.7em;
+  color: var(--muted);
+}
+
+.bookings-table-container {
+  overflow-x: auto;
+  padding: 0;
 }
 
 .bookings-table {
-    background: var(--card);
-    border-radius: 8px;
-    overflow-x: auto;
-    border: 1px solid #39417b;
+  width: 100%;
+  border-collapse: collapse;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px;
+.bookings-table thead tr {
+  background: rgba(68, 74, 247, 0.05);
+  border-bottom: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-th, td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #39417b;
+.bookings-table th {
+  padding: 16px 20px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-th {
-    background: #1a2244;
-    color: #e6e9fb;
-    font-weight: 600;
+.bookings-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(68, 74, 247, 0.1);
+  vertical-align: middle;
 }
 
-td {
-    color: #a0a7e6;
+.booking-row:hover {
+  background: rgba(68, 74, 247, 0.05);
 }
 
-tr:hover {
-    background: #1a2244;
+.booking-row.past-booking {
+  opacity: 0.7;
 }
 
-.status {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: bold;
-    display: inline-block;
+.quest-cell .quest-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.status.upcoming {
-    background: #28a745;
-    color: white;
+.quest-icon {
+  font-size: 1.2em;
 }
 
-.status.past {
-    background: #6c757d;
-    color: white;
+.quest-title {
+  font-weight: 500;
+  color: #e6e9fb;
 }
 
-.btn.small {
-    padding: 6px 12px;
-    font-size: 0.8em;
+.user-cell .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.btn.danger {
-    background: #dc3545;
-    color: white;
-    border: none;
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  background: rgba(68, 74, 247, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
 }
 
-.btn.danger:hover {
-    background: #c82333;
+.username {
+  color: #b0b6e6;
 }
 
-.stats {
-    color: #a0a7e6;
+.email-cell .email-text {
+  color: #b0b6e6;
+  font-size: 0.85em;
 }
 
-.no-bookings {
-    text-align: center;
-    padding: 40px;
-    background: var(--card);
-    border-radius: 8px;
-    border: 1px solid #39417b;
+.date-cell .date-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.no-bookings p {
-    color: #a0a7e6;
-    font-size: 1.1em;
+.date-icon {
+  font-size: 0.9em;
 }
 
-/* Адаптивность */
+.date-text {
+  color: #b0b6e6;
+  font-size: 0.85em;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 0.75em;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.status-badge.completed {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+}
+
+.delete-booking-btn {
+  background: rgba(220, 53, 69, 0.2);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 30px;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 0.75em;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.delete-booking-btn:hover {
+  background: rgba(220, 53, 69, 0.3);
+  transform: translateY(-2px);
+}
+
+.stats-footer {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(68, 74, 247, 0.1);
+}
+
+.footer-stats {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  padding: 4px 12px;
+  background: var(--panel);
+  border-radius: 30px;
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
+.stat-badge.active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.stat-badge.completed {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+}
+
+.empty-icon {
+  font-size: 4em;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  margin-bottom: 8px;
+  font-size: 1.2em;
+}
+
+.empty-state p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.empty-action-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 40px;
+  text-decoration: none;
+  font-size: 0.9em;
+  transition: all 0.3s;
+}
+
+.empty-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+}
+
 @media (max-width: 768px) {
-    .admin-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
+  .bookings-admin-page {
+    padding: 16px;
+  }
 
-    .filters select {
-        width: 100%;
-    }
+  .page-header {
+    flex-direction: column;
+  }
+
+  .filter-control {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .quest-filter-select {
+    width: 100%;
+  }
+
+  .stats-summary {
+    flex-direction: column;
+  }
+
+  .stat-summary-card {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bookings-table th,
+  .bookings-table td {
+    padding: 12px;
+  }
+
+  .footer-stats {
+    justify-content: center;
+  }
 }
 </style>
 
@@ -212,7 +533,6 @@ function filterByQuest() {
     }
 }
 
-// Подтверждение удаления
 document.addEventListener('DOMContentLoaded', function() {
     const deleteForms = document.querySelectorAll('form[action*="/admin/delete-booking/"]');
     deleteForms.forEach(form => {

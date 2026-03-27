@@ -1,169 +1,460 @@
 {% extends "base.html" %}
 {% block title %}Отзывы о квесте {{ quest.title }}{% endblock %}
 {% block content %}
-<div class="container">
-    <div class="reviews-header">
-        <a href="/quest/{{ quest.id }}" class="btn outline">← Назад к квесту</a>
-        <h2>Отзывы о квесте "{{ quest.title }}"</h2>
-        
+<div class="reviews-page">
+  <div class="reviews-header">
+    <a href="/quest/{{ quest.id }}" class="back-btn">← Назад к квесту</a>
+  </div>
+
+  <div class="reviews-container">
+    <div class="quest-info-card">
+      <div class="quest-info-content">
+        <div class="quest-icon-large">🎭</div>
+        <div class="quest-details">
+          <h2>{{ quest.title }}</h2>
+          <div class="quest-badges">
+            <span class="badge-small genre">{{ quest.genre.split(', ')[0] }}</span>
+            <span class="badge-small difficulty">{{ quest.difficulty }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rating-summary-card">
         {% if avg_rating %}
-        <div class="rating-summary">
-            <span class="average-rating">{{ avg_rating }}</span>
-            <span class="stars-display">
-                {% for i in range(1, 6) %}
-                    {% if i <= avg_rating|int %}
-                        ★
-                    {% else %}
-                        ☆
-                    {% endif %}
-                {% endfor %}
-            </span>
-            <span class="review-count">({{ reviews|length }} отзывов)</span>
-        </div>
-        {% endif %}
-        
-        {% if can_review %}
-        <div class="write-review-btn">
-            <a href="/my-bookings" class="btn success">Написать отзыв</a>
-        </div>
-        {% endif %}
-    </div>
-    
-    {% if reviews %}
-    <div class="reviews-list">
-        {% for review in reviews %}
-        <div class="review-card">
-            <div class="review-header">
-                <div class="reviewer-info">
-                    <strong>{{ review.user.username }}</strong>
-                    <span class="review-date">{{ review.created_at.strftime('%d.%m.%Y') }}</span>
-                </div>
-                <div class="review-rating">
-                    {% for i in range(1, 6) %}
-                        {% if i <= review.rating %}
-                            ★
-                        {% else %}
-                            ☆
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            {% if review.comment %}
-            <div class="review-comment">
-                {{ review.comment }}
-            </div>
+        <div class="rating-number">{{ avg_rating }}</div>
+        <div class="rating-stars-big">
+          {% set full_stars = avg_rating|int %}
+          {% set has_half = (avg_rating - full_stars) >= 0.5 %}
+          {% for i in range(1, 6) %}
+            {% if i <= full_stars %}
+              <span class="star-big filled">★</span>
+            {% elif i == full_stars + 1 and has_half %}
+              <span class="star-big half">⭐</span>
+            {% else %}
+              <span class="star-big empty">☆</span>
             {% endif %}
+          {% endfor %}
         </div>
-        {% endfor %}
+        <div class="reviews-count">{{ reviews|length }} отзывов</div>
+        {% else %}
+        <div class="no-rating-big">
+          <div class="stars-placeholder">☆☆☆☆☆</div>
+          <div class="no-rating-text">Пока нет оценок</div>
+          <div class="be-first-text">Будьте первым, кто оценит этот квест!</div>
+        </div>
+        {% endif %}
+      </div>
     </div>
-    {% else %}
-    <div class="no-reviews">
-        <p>Пока нет отзывов. Будьте первым!</p>
+
+    {% if can_review %}
+    <div class="write-review-prompt">
+      <div class="prompt-icon">✍️</div>
+      <div class="prompt-text">
+        <h4>Впечатлениями!</h4>
+        <p>Поделитесь своим опытом прохождения квеста</p>
+      </div>
+      <a href="/my-bookings" class="write-review-btn">Написать отзыв →</a>
     </div>
     {% endif %}
+
+    {% if reviews %}
+    <div class="reviews-list">
+      {% for review in reviews %}
+      <div class="review-card">
+        <div class="review-card-header">
+          <div class="reviewer-avatar">
+            <span class="avatar-icon">👤</span>
+          </div>
+          <div class="reviewer-details">
+            <div class="reviewer-name">{{ review.user.username }}</div>
+            <div class="review-date">{{ review.created_at.strftime('%d.%m.%Y') }}</div>
+          </div>
+          <div class="review-rating-stars">
+            {% for i in range(1, 6) %}
+              {% if i <= review.rating %}
+                <span class="star-small filled">★</span>
+              {% else %}
+                <span class="star-small empty">☆</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% if review.comment %}
+        <div class="review-comment">
+          <p>{{ review.comment }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-reviews">
+      <div class="empty-icon">💬</div>
+      <h3>Пока нет отзывов</h3>
+      <p>Будьте первым, кто поделится впечатлениями о квесте!</p>
+      {% if can_review %}
+      <a href="/my-bookings" class="empty-action-btn">Написать отзыв →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
 </div>
 
 <style>
+.reviews-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
 .reviews-header {
-    margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
-.reviews-header h2 {
-    margin: 20px 0 10px 0;
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9em;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-radius: 30px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+  transition: all 0.3s;
 }
 
-.rating-summary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 15px 0;
-    padding: 15px;
-    background: var(--panel);
-    border-radius: 8px;
+.back-btn:hover {
+  color: var(--accent);
+  transform: translateX(-4px);
+  border-color: var(--accent);
 }
 
-.average-rating {
-    font-size: 2em;
-    font-weight: bold;
-    color: var(--accent);
+.reviews-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.stars-display {
-    font-size: 1.2em;
-    color: gold;
+.quest-info-card {
+  background: linear-gradient(135deg, var(--card), #1a1f3a);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.review-count {
-    color: var(--muted);
+.quest-info-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.quest-icon-large {
+  font-size: 3em;
+  background: rgba(68, 74, 247, 0.2);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+}
+
+.quest-details h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4em;
+}
+
+.quest-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.badge-small {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7em;
+}
+
+.badge-small.genre {
+  background: rgba(68, 74, 247, 0.2);
+  color: #8f97ff;
+}
+
+.badge-small.difficulty {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.rating-summary-card {
+  text-align: center;
+  padding: 12px 24px;
+  background: rgba(68, 74, 247, 0.1);
+  border-radius: 20px;
+  min-width: 160px;
+}
+
+.rating-number {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: gold;
+  line-height: 1;
+}
+
+.rating-stars-big {
+  font-size: 1.3em;
+  letter-spacing: 3px;
+  margin: 8px 0;
+}
+
+.rating-stars-big .star-big.filled {
+  color: gold;
+}
+
+.rating-stars-big .star-big.half {
+  color: gold;
+}
+
+.rating-stars-big .star-big.empty {
+  color: #555;
+}
+
+.reviews-count {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.no-rating-big {
+  text-align: center;
+}
+
+.stars-placeholder {
+  font-size: 1.5em;
+  letter-spacing: 3px;
+  color: #555;
+}
+
+.no-rating-text {
+  font-size: 0.9em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.be-first-text {
+  font-size: 0.7em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.write-review-prompt {
+  background: linear-gradient(135deg, rgba(68, 74, 247, 0.1), rgba(106, 17, 203, 0.05));
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.prompt-icon {
+  font-size: 2em;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(68, 74, 247, 0.2);
+  border-radius: 50%;
+}
+
+.prompt-text {
+  flex: 1;
+}
+
+.prompt-text h4 {
+  margin: 0 0 4px 0;
+  font-size: 1em;
+}
+
+.prompt-text p {
+  margin: 0;
+  font-size: 0.8em;
+  color: var(--muted);
 }
 
 .write-review-btn {
-    margin-top: 15px;
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 0.85em;
+  transition: all 0.3s;
 }
 
-.btn.success {
-    background: #28a745;
-}
-
-.btn.success:hover {
-    background: #218838;
+.write-review-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
 }
 
 .reviews-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .review-card {
-    background: var(--card);
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid #39417b;
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+  transition: all 0.3s;
 }
 
-.review-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #39417b;
+.review-card:hover {
+  transform: translateX(4px);
+  border-color: rgba(68, 74, 247, 0.4);
 }
 
-.reviewer-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+.review-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-.reviewer-info strong {
-    color: #e6e9fb;
-    font-size: 1.1em;
+.reviewer-avatar {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #2a2f4e, #1a1f3a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  font-size: 1.4em;
+}
+
+.reviewer-details {
+  flex: 1;
+}
+
+.reviewer-name {
+  font-weight: 600;
+  color: #e6e9fb;
 }
 
 .review-date {
-    color: var(--muted);
-    font-size: 0.8em;
+  font-size: 0.7em;
+  color: var(--muted);
 }
 
-.review-rating {
-    font-size: 1.2em;
-    color: gold;
+.review-rating-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star-small {
+  font-size: 1em;
+}
+
+.star-small.filled {
+  color: gold;
+}
+
+.star-small.empty {
+  color: #555;
 }
 
 .review-comment {
-    color: #d2d6f7;
-    line-height: 1.5;
+  padding-top: 12px;
+  border-top: 1px solid rgba(68, 74, 247, 0.2);
+  color: #b0b6e6;
+  line-height: 1.5;
 }
 
-.no-reviews {
+.review-comment p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.empty-reviews {
+  text-align: center;
+  padding: 48px;
+  background: var(--panel);
+  border-radius: 24px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.empty-icon {
+  font-size: 3.5em;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-reviews h3 {
+  margin-bottom: 8px;
+  font-size: 1.2em;
+}
+
+.empty-reviews p {
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.empty-action-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 0.9em;
+  transition: all 0.3s;
+}
+
+.empty-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+}
+
+@media (max-width: 768px) {
+  .reviews-page {
+    padding: 16px;
+  }
+
+  .quest-info-card {
+    flex-direction: column;
     text-align: center;
-    padding: 40px;
-    background: var(--card);
-    border-radius: 8px;
-    border: 1px solid #39417b;
-    color: #a0a7e6;
+  }
+
+  .quest-info-content {
+    flex-direction: column;
+  }
+
+  .write-review-prompt {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .review-card-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .review-rating-stars {
+    justify-content: center;
+  }
 }
 </style>
 {% endblock %}

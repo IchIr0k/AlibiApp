@@ -1,112 +1,78 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, func, or_
+from sqlalchemy import text
 import models
 from datetime import datetime, date, timedelta
 from typing import Optional, List
 
 
 def get_quests(db: Session, skip: int = 0, limit: int = 12, filters: dict = None):
-    query = db.query(models.Quest).filter(models.Quest.is_active == True)
+    """
+    Поиск квестов с использованием PostgreSQL функции search_quests()
+    """
+    if filters is None:
+        filters = {}
 
-    if filters:
-        # Поиск по тексту
-        if filters.get("q"):
-            search = f"%{filters['q']}%"
-            query = query.filter(
-                or_(
-                    models.Quest.title.ilike(search),
-                    models.Quest.description.ilike(search)
-                )
+    result = db.execute(
+        text("""
+            SELECT * FROM search_quests(
+                :p_search, 
+                :p_genres, 
+                :p_difficulties, 
+                :p_max_fear_level,
+                :p_min_players,
+                :p_max_players,
+                :p_min_rating,
+                :p_sort_by, 
+                :p_limit, 
+                :p_offset
             )
+        """),
+        {
+            "p_search": filters.get("q"),
+            "p_genres": filters.get("genre") if filters.get("genre") else None,
+            "p_difficulties": filters.get("difficulty") if filters.get("difficulty") else None,
+            "p_max_fear_level": int(filters["fear_level"]) if filters.get("fear_level") else None,
+            "p_min_players": int(filters["players"]) if filters.get("players") else None,
+            "p_max_players": int(filters["players"]) if filters.get("players") else None,
+            "p_min_rating": float(filters["min_rating"]) if filters.get("min_rating") else None,
+            "p_sort_by": filters.get("sort") if filters.get("sort") else "title_asc",
+            "p_limit": limit,
+            "p_offset": skip
+        }
+    )
 
-        # Фильтр по жанрам - ищем квесты, содержащие ЛЮБОЙ из выбранных жанров
-        if filters.get("genre"):
-            genres = filters["genre"]
-            if isinstance(genres, list) and len(genres) > 0:
-                genre_filters = []
-                for genre in genres:
-                    genre_filters.append(models.Quest.genre.ilike(f"%{genre}%"))
-                query = query.filter(or_(*genre_filters))
-            elif isinstance(genres, str):
-                query = query.filter(models.Quest.genre.ilike(f"%{genres}%"))
+    quests = []
+    for row in result:
+        quest = models.Quest(
+            id=row.id,
+            title=row.title,
+            description=row.description,
+            genre=row.genre,
+            difficulty=row.difficulty,
+            fear_level=row.fear_level,
+            price=row.price,
+            address=row.address,
+            image_data=row.image_data,
+            avg_rating=row.avg_rating,
+            min_players=row.min_players,
+            max_players=row.max_players
+        )
+        quests.append(quest)
 
-        # Фильтр по сложности - ищем квесты с ЛЮБОЙ из выбранных сложностей
-        if filters.get("difficulty"):
-            difficulties = filters["difficulty"]
-            if isinstance(difficulties, list) and len(difficulties) > 0:
-                query = query.filter(models.Quest.difficulty.in_(difficulties))
-            elif isinstance(difficulties, str):
-                query = query.filter(models.Quest.difficulty == difficulties)
-
-        # Фильтр по количеству игроков
-        if filters.get("players"):
-            try:
-                p = int(filters["players"])
-                query = query.filter(models.Quest.min_players <= p, models.Quest.max_players >= p)
-            except:
-                pass
-
-        # Фильтр по уровню страха
-        if filters.get("fear_level"):
-            try:
-                fear = int(filters["fear_level"])
-                query = query.filter(models.Quest.fear_level <= fear)
-            except:
-                pass
-
-        # Сортировка
-        if filters.get("sort"):
-            if filters["sort"] == "price_low":
-                query = query.order_by(models.Quest.price.asc())
-            elif filters["sort"] == "price_high":
-                query = query.order_by(models.Quest.price.desc())
-            elif filters["sort"] == "title_asc":
-                query = query.order_by(models.Quest.title.asc())
-            elif filters["sort"] == "title_desc":
-                query = query.order_by(models.Quest.title.desc())
-
-    return query.offset(skip).limit(limit).all()
+    return quests
 
 
 def get_quest(db: Session, quest_id: int):
-    return db.query(models.Quest).filter(models.Quest.id == quest_id, models.Quest.is_active == True).first()
-
-
-def has_quest_bookings(db: Session, quest_id: int) -> bool:
-    """Проверяет, есть ли у квеста активные бронирования (будущие)"""
-    return db.query(models.Booking).filter(
-        models.Booking.quest_id == quest_id,
-        models.Booking.booking_date_time >= datetime.now()
-    ).count() > 0
-
-
-def get_quest_bookings(db: Session, quest_id: int):
-    return db.query(models.Booking).filter(
-        models.Booking.quest_id == quest_id
-    ).order_by(models.Booking.booking_date_time.desc()).all()
-
-
-def get_booked_slots_for_date(db: Session, quest_id: int, date_str: str):
-    """Возвращает список занятых временных слотов для квеста на указанную дату"""
-    try:
-        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-
-        bookings = db.query(models.Booking).join(
-            models.Schedule, models.Booking.schedule_id == models.Schedule.id
-        ).filter(
-            models.Schedule.quest_id == quest_id,
-            models.Schedule.schedule_date == target_date,
-            models.Booking.status_id != 3
-        ).all()
-
-        return [b.schedule.start_time.strftime("%H:%M") for b in bookings if b.schedule]
-    except Exception as e:
-        print(f"Error in get_booked_slots_for_date: {e}")
-        return []
+    """Получение одного квеста по ID"""
+    return db.query(models.Quest).filter(
+        models.Quest.id == quest_id,
+        models.Quest.is_active == True
+    ).first()
 
 
 def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot: str,
                    payment_method: str, prepayment: int = None):
+    """Создание бронирования"""
     try:
         booking_datetime = datetime.strptime(f"{date} {timeslot}", "%Y-%m-%d %H:%M")
         booking_date = booking_datetime.date()
@@ -116,6 +82,7 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
         quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
 
         if not user or not quest:
+            print(f"User or quest not found: user={user_id}, quest={quest_id}")
             return None
 
         schedule = db.query(models.Schedule).filter(
@@ -163,7 +130,8 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
         )
 
         db.add(booking)
-        db.flush()
+        schedule.booked_slots += 2
+
         db.commit()
         db.refresh(booking)
         return booking
@@ -175,15 +143,29 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
 
 
 def get_user_bookings(db: Session, user_id: int):
-    return db.query(models.Booking).filter(
-        models.Booking.user_id == user_id
-    ).options(
-        joinedload(models.Booking.quest),
-        joinedload(models.Booking.schedule)
-    ).order_by(models.Booking.booking_date_time.desc()).all()
+    """Получение бронирований пользователя"""
+    result = db.execute(
+        text("SELECT * FROM get_user_bookings_with_reviews(:user_id)"),
+        {"user_id": user_id}
+    )
+
+    bookings = []
+    for row in result:
+        booking = db.query(models.Booking).filter(
+            models.Booking.id == row.booking_id
+        ).first()
+        if booking:
+            booking.can_cancel = row.can_cancel
+            booking.can_review = row.can_review
+            booking.has_review = row.has_review
+            booking.hours_until_booking = row.hours_until_booking
+            bookings.append(booking)
+
+    return bookings
 
 
 def get_all_bookings(db: Session):
+    """Получение всех бронирований (админка)"""
     return db.query(models.Booking).options(
         joinedload(models.Booking.user),
         joinedload(models.Booking.quest),
@@ -191,7 +173,57 @@ def get_all_bookings(db: Session):
     ).order_by(models.Booking.booking_date_time.desc()).all()
 
 
+def get_quest_statistics(db: Session):
+    """Получение статистики по квестам"""
+    result = db.execute(text("SELECT * FROM quest_statistics"))
+    return result.fetchall()
+
+
+def search_quests_by_text(db: Session, search_text: str, limit: int = 10):
+    """Быстрый текстовый поиск"""
+    result = db.execute(
+        text("SELECT * FROM search_quests_by_text(:search_text, :limit)"),
+        {"search_text": search_text, "limit": limit}
+    )
+    return result.fetchall()
+
+
+def get_quest_bookings(db: Session, quest_id: int):
+    """Получение бронирований для конкретного квеста"""
+    return db.query(models.Booking).filter(
+        models.Booking.quest_id == quest_id
+    ).order_by(models.Booking.booking_date_time.desc()).all()
+
+
+def has_quest_bookings(db: Session, quest_id: int) -> bool:
+    """Проверка наличия активных бронирований у квеста"""
+    return db.query(models.Booking).filter(
+        models.Booking.quest_id == quest_id,
+        models.Booking.booking_date_time >= datetime.now()
+    ).count() > 0
+
+
+def get_booked_slots_for_date(db: Session, quest_id: int, date_str: str):
+    """Получение занятых слотов на дату"""
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+        bookings = db.query(models.Booking).join(
+            models.Schedule, models.Booking.schedule_id == models.Schedule.id
+        ).filter(
+            models.Schedule.quest_id == quest_id,
+            models.Schedule.schedule_date == target_date,
+            models.Booking.status_id != 3
+        ).all()
+
+        return [b.schedule.start_time.strftime("%H:%M") for b in bookings if b.schedule]
+    except Exception as e:
+        print(f"Error in get_booked_slots_for_date: {e}")
+        return []
+
+
 def delete_booking(db: Session, booking_id: int):
+    """Удаление бронирования"""
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if booking:
         db.delete(booking)
@@ -201,6 +233,7 @@ def delete_booking(db: Session, booking_id: int):
 
 
 def delete_quest(db: Session, quest_id: int):
+    """Удаление квеста и всех связанных данных"""
     quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
     if quest:
         bookings = db.query(models.Booking).filter(models.Booking.quest_id == quest_id).all()
@@ -217,11 +250,8 @@ def delete_quest(db: Session, quest_id: int):
     return False
 
 
-def delete_quest_force(db: Session, quest_id: int):
-    return delete_quest(db, quest_id)
-
-
 def get_available_schedules(db: Session, quest_id: int, date_from: date = None):
+    """Получение доступных слотов"""
     if not date_from:
         date_from = datetime.now().date()
 

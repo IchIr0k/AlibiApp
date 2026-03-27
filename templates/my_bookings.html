@@ -1,538 +1,757 @@
 {% extends "base.html" %}
 {% block title %}Мои бронирования{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Мои бронирования</h2>
-    
-    {% if bookings %}
-    <div class="bookings-list">
-        {% for booking in bookings %}
-        {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
-        {% set current_time = now() %}
-        {% set is_past = booking_time < current_time %}
-        {% set hours_diff = ((booking_time - current_time).total_seconds() / 3600) if not is_past else 0 %}
-        {% set can_cancel = (not is_past) and (hours_diff >= 24) %}
-        {% set can_pay = (not is_past) and (booking.payment_status != 'prepayment_paid') %}
+<div class="bookings-container">
+  <div class="bookings-header">
+    <h2>📅 Мои бронирования</h2>
+    <p class="header-subtitle">Управляйте своими бронями, вносите предоплату и оставляйте отзывы</p>
+  </div>
 
-        <div class="booking-item" id="booking-{{ booking.id }}">
-            <div class="booking-info">
-                <h4>{{ booking.quest.title }}</h4>
-                <p class="meta">
-                    <strong>Дата и время:</strong> {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}<br>
-                    <strong>Жанр:</strong> {{ booking.quest.genre }}<br>
-                    <strong>Сложность:</strong> {{ booking.quest.difficulty }}<br>
-                    <strong>Адрес:</strong> {{ booking.quest.address }}<br>
-                    <strong>Игроков:</strong> {{ booking.quest.min_players }}-{{ booking.quest.max_players }} чел.<br>
-                    <strong>Полная стоимость:</strong> {{ booking.total_price }}₽<br>
-                    <strong>Предоплата (50%):</strong> {{ booking.prepayment }}₽<br>
-                    <strong>Способ оплаты:</strong>
-                    {% if booking.payment_method == 'card' %}💳 Банковская карта
-                    {% elif booking.payment_method == 'sbp' %}📱 СБП
-                    {% endif %}<br>
-                    <strong>Статус оплаты:</strong>
-                    {% if booking.payment_status == 'prepayment_paid' %}
-                    <span class="payment-status paid">✅ Предоплата внесена</span>
-                    {% else %}
-                    <span class="payment-status pending">⏳ Ожидает предоплату</span>
-                    {% endif %}
-                </p>
-                {% if not is_past %}
-                <p class="cancel-note" style="color: {% if hours_diff >= 24 %}#ffaa66{% else %}#ff6666{% endif %}; font-size: 0.85em;">
-                    {% if hours_diff >= 24 %}
-                    ⚠️ Отмена возможна до {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }} (за 24 часа)
-                    {% else %}
-                    ❌ Отмена невозможна (менее 24 часов до начала)
-                    {% endif %}
-                </p>
-                {% endif %}
-            </div>
-            <div class="booking-status">
-                {% if is_past %}
-                <span class="status past">Завершено</span>
-                {% else %}
-                <span class="status upcoming">Предстоит</span>
-                {% endif %}
+  {% if bookings %}
+  <div class="bookings-list">
+    {% for booking in bookings %}
+    {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
+    {% set current_time = now() %}
+    {% set is_past = booking_time < current_time %}
+    {% set hours_diff = ((booking_time - current_time).total_seconds() / 3600) if not is_past else 0 %}
+    {% set can_cancel = (not is_past) and (hours_diff >= 24) %}
+    {% set can_pay = (not is_past) and (booking.payment_status != 'prepayment_paid') %}
 
-                <div class="booking-actions">
-                    {% if not is_past and can_pay %}
-                    <button class="btn success small pay-prepayment"
-                            data-booking-id="{{ booking.id }}"
-                            data-quest-title="{{ booking.quest.title }}"
-                            data-prepayment="{{ booking.prepayment }}">
-                        💳 Внести предоплату {{ booking.prepayment }}₽
-                    </button>
-                    {% endif %}
-
-                    {% if not is_past and can_cancel %}
-                    <button class="btn danger small cancel-booking"
-                            data-booking-id="{{ booking.id }}"
-                            data-quest-title="{{ booking.quest.title }}"
-                            data-booking-date="{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}">
-                        ❌ Отменить бронь
-                    </button>
-                    {% endif %}
-
-                    {% if is_past and booking.payment_status == 'prepayment_paid' %}
-                    {% set has_review = false %}
-                    {% for review in user_reviews if review.booking_id == booking.id %}
-                        {% set has_review = true %}
-                    {% endfor %}
-                    {% if not has_review %}
-                    <a href="/write-review/{{ booking.id }}" class="btn outline small">✍️ Написать отзыв</a>
-                    {% endif %}
-                    {% endif %}
-
-                    <button class="btn outline small download-receipt"
-                            data-quest-title="{{ booking.quest.title }}"
-                            data-quest-price="{{ booking.total_price }}"
-                            data-prepayment="{{ booking.prepayment }}"
-                            data-payment-method="{{ booking.payment_method }}"
-                            data-payment-status="{{ booking.payment_status }}">
-                        🧾 Скачать чек
-                    </button>
-                </div>
-            </div>
+    <div class="booking-card {% if is_past %}past{% endif %}" id="booking-{{ booking.id }}">
+      <div class="booking-card-header">
+        <div class="quest-icon">🎭</div>
+        <div class="quest-title">
+          <h3>{{ booking.quest.title }}</h3>
+          <div class="quest-meta">
+            <span class="meta-tag">{{ booking.quest.genre.split(', ')[0] }}</span>
+            <span class="meta-tag">{{ booking.quest.difficulty }}</span>
+          </div>
         </div>
-        {% endfor %}
+        <div class="booking-status-badge">
+          {% if is_past %}
+          <span class="status-badge completed">✅ Завершено</span>
+          {% else %}
+          <span class="status-badge upcoming">🕐 Предстоит</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="booking-card-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-icon">📅</span>
+            <div class="info-content">
+              <span class="info-label">Дата и время</span>
+              <span class="info-value">{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">📍</span>
+            <div class="info-content">
+              <span class="info-label">Адрес</span>
+              <span class="info-value">{{ booking.quest.address }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">👥</span>
+            <div class="info-content">
+              <span class="info-label">Количество игроков</span>
+              <span class="info-value">{{ booking.quest.min_players }}-{{ booking.quest.max_players }} чел.</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">💰</span>
+            <div class="info-content">
+              <span class="info-label">Полная стоимость</span>
+              <span class="info-value price">{{ booking.total_price }}₽</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">💳</span>
+            <div class="info-content">
+              <span class="info-label">Предоплата (50%)</span>
+              <span class="info-value prepayment">{{ booking.prepayment }}₽</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">💳</span>
+            <div class="info-content">
+              <span class="info-label">Способ оплаты</span>
+              <span class="info-value">
+                {% if booking.payment_method == 'card' %}💳 Банковская карта
+                {% elif booking.payment_method == 'sbp' %}📱 СБП
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">✅</span>
+            <div class="info-content">
+              <span class="info-label">Статус оплаты</span>
+              <span class="info-value">
+                {% if booking.payment_status == 'prepayment_paid' %}
+                <span class="payment-badge paid">✅ Предоплата внесена</span>
+                {% else %}
+                <span class="payment-badge pending">⏳ Ожидает предоплату</span>
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {% if not is_past %}
+        <div class="cancel-note {% if hours_diff >= 24 %}warning{% else %}danger{% endif %}">
+          {% if hours_diff >= 24 %}
+          ⚠️ Отмена возможна до {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }} (за 24 часа)
+          {% else %}
+          ❌ Отмена невозможна (менее 24 часов до начала)
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="booking-card-footer">
+        <div class="action-buttons">
+          {% if not is_past and can_pay %}
+          <button class="action-btn pay-btn pay-prepayment"
+                  data-booking-id="{{ booking.id }}"
+                  data-quest-title="{{ booking.quest.title }}"
+                  data-prepayment="{{ booking.prepayment }}">
+            💳 Внести предоплату {{ booking.prepayment }}₽
+          </button>
+          {% endif %}
+
+          {% if not is_past and can_cancel %}
+          <button class="action-btn cancel-btn cancel-booking"
+                  data-booking-id="{{ booking.id }}"
+                  data-quest-title="{{ booking.quest.title }}"
+                  data-booking-date="{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}">
+            ❌ Отменить бронь
+          </button>
+          {% endif %}
+
+          {% if is_past and booking.payment_status == 'prepayment_paid' %}
+          {% set has_review = false %}
+          {% for review in user_reviews if review.booking_id == booking.id %}
+            {% set has_review = true %}
+          {% endfor %}
+          {% if not has_review %}
+          <a href="/write-review/{{ booking.id }}" class="action-btn review-btn">✍️ Написать отзыв</a>
+          {% endif %}
+          {% endif %}
+
+          <button class="action-btn receipt-btn download-receipt"
+                  data-quest-title="{{ booking.quest.title }}"
+                  data-quest-price="{{ booking.total_price }}"
+                  data-prepayment="{{ booking.prepayment }}"
+                  data-payment-method="{{ booking.payment_method }}"
+                  data-payment-status="{{ booking.payment_status }}">
+            🧾 Скачать чек
+          </button>
+        </div>
+      </div>
     </div>
-    {% else %}
-    <div class="no-bookings">
-        <p>У вас пока нет бронирований.</p>
-        <a href="/" class="btn">Найти квест</a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🎭</div>
+    <h3>У вас пока нет бронирований</h3>
+    <p>Откройте для себя захватывающие квесты и забронируйте свой первый!</p>
+    <a href="/" class="explore-btn">Найти квест →</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Модальные окна -->
+<div id="payModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">💳 Внесение предоплаты</div>
+    <div class="modal-body">
+      <p>Вы действительно хотите внести предоплату?</p>
+      <p><strong id="payModalQuestTitle"></strong></p>
+      <p><strong id="payModalAmount"></strong></p>
+      <p class="warning-text">⚠️ После оплаты предоплата не возвращается!</p>
     </div>
-    {% endif %}
+    <div class="modal-footer">
+      <button class="modal-btn confirm" id="confirmPay">✅ Оплатить</button>
+      <button class="modal-btn cancel" id="closePayModal">❌ Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div id="cancelModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">❌ Отмена бронирования</div>
+    <div class="modal-body">
+      <p>Вы действительно хотите отменить бронирование?</p>
+      <p><strong id="cancelModalQuestTitle"></strong></p>
+      <p><strong id="cancelModalBookingDate"></strong></p>
+      <p class="warning-text">⚠️ Предоплата не возвращается!</p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn confirm" id="confirmCancel">✅ Да, отменить</button>
+      <button class="modal-btn cancel" id="closeCancelModal">❌ Нет, вернуться</button>
+    </div>
+  </div>
 </div>
 
 <style>
+.bookings-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.bookings-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.bookings-header h2 {
+  font-size: 1.8em;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-subtitle {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
 .bookings-list {
-    margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.booking-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 20px;
-    background: var(--card);
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #39417b;
-    transition: all 0.3s;
+.booking-card {
+  background: var(--card);
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+  transition: all 0.3s;
 }
 
-.booking-item.cancelled {
-    opacity: 0.6;
-    background: #2a2a2a;
+.booking-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(68, 74, 247, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.booking-info {
-    flex: 1;
+.booking-card.past {
+  opacity: 0.7;
 }
 
-.booking-info h4 {
-    margin: 0 0 10px 0;
-    color: #e6e9fb;
-    font-size: 1.2em;
+.booking-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(68, 74, 247, 0.05), rgba(106, 17, 203, 0.02));
+  border-bottom: 1px solid rgba(68, 74, 247, 0.1);
 }
 
-.booking-info .meta {
-    margin: 0;
-    color: #a0a7e6;
-    line-height: 1.5;
+.quest-icon {
+  font-size: 2em;
 }
 
-.payment-status {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.85em;
-    font-weight: bold;
+.quest-title {
+  flex: 1;
 }
 
-.payment-status.paid {
-    background: #28a745;
-    color: white;
+.quest-title h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1em;
 }
 
-.payment-status.pending {
-    background: #ffc107;
-    color: #000;
+.quest-meta {
+  display: flex;
+  gap: 8px;
+}
+
+.meta-tag {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  color: var(--muted);
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.75em;
+  font-weight: 500;
+}
+
+.status-badge.upcoming {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.status-badge.completed {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+}
+
+.booking-card-body {
+  padding: 20px 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-icon {
+  font-size: 1.2em;
+  width: 28px;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-label {
+  display: block;
+  font-size: 0.7em;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.info-value {
+  font-size: 0.9em;
+  color: #e6e9fb;
+}
+
+.info-value.price {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.info-value.prepayment {
+  color: #ffc107;
+}
+
+.payment-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75em;
+}
+
+.payment-badge.paid {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.payment-badge.pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
 }
 
 .cancel-note {
-    margin-top: 10px;
-    padding: 5px 10px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    font-size: 0.85em;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  margin-top: 8px;
 }
 
-.booking-status {
-    flex-shrink: 0;
-    margin-left: 20px;
-    text-align: center;
-    min-width: 160px;
+.cancel-note.warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-left: 3px solid #ffc107;
+  color: #ffd966;
 }
 
-.status {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 0.9em;
-    margin-bottom: 10px;
-    display: block;
+.cancel-note.danger {
+  background: rgba(220, 53, 69, 0.1);
+  border-left: 3px solid #dc3545;
+  color: #ffaaaa;
 }
 
-.status.upcoming {
-    background: #28a745;
-    color: white;
+.booking-card-footer {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(68, 74, 247, 0.1);
 }
 
-.status.past {
-    background: #6c757d;
-    color: white;
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.booking-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.action-btn {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  background: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.btn.small {
-    padding: 8px 12px;
-    font-size: 0.8em;
-    white-space: nowrap;
-    cursor: pointer;
+.pay-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
 }
 
-.btn.success {
-    background: #28a745;
-    color: white;
-    border: none;
+.pay-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
-.btn.success:hover {
-    background: #218838;
+.cancel-btn {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
-.btn.danger {
-    background: #dc3545;
-    color: white;
-    border: none;
+.cancel-btn:hover {
+  background: rgba(220, 53, 69, 0.3);
+  transform: translateY(-2px);
 }
 
-.btn.danger:hover {
-    background: #c82333;
+.review-btn {
+  background: rgba(68, 74, 247, 0.2);
+  color: var(--accent);
 }
 
-.no-bookings {
-    text-align: center;
-    padding: 40px;
-    background: var(--card);
-    border-radius: 8px;
-    border: 1px solid #39417b;
+.review-btn:hover {
+  background: rgba(68, 74, 247, 0.3);
+  transform: translateY(-2px);
 }
 
-.no-bookings p {
-    margin-bottom: 20px;
-    color: #a0a7e6;
-    font-size: 1.1em;
+.receipt-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  border: 1px solid rgba(68, 74, 247, 0.3);
 }
 
-/* Модальное окно */
+.receipt-btn:hover {
+  background: rgba(68, 74, 247, 0.2);
+  transform: translateY(-2px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--card);
+  border-radius: 32px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.empty-icon {
+  font-size: 4em;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  margin-bottom: 12px;
+  font-size: 1.3em;
+}
+
+.empty-state p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.explore-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  color: white;
+  padding: 12px 32px;
+  border-radius: 40px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.explore-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+}
+
+/* Модальные окна */
 .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content {
-    background: var(--card);
-    padding: 25px;
-    border-radius: 12px;
-    max-width: 400px;
-    border: 1px solid #39417b;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  background: var(--card);
+  border-radius: 24px;
+  max-width: 400px;
+  width: 90%;
+  overflow: hidden;
+  border: 1px solid rgba(68, 74, 247, 0.3);
+  animation: modalSlideIn 0.3s ease;
 }
 
-.modal-content h3 {
-    margin: 0 0 15px 0;
+.modal-header {
+  padding: 20px;
+  font-size: 1.2em;
+  font-weight: bold;
+  background: linear-gradient(135deg, rgba(68, 74, 247, 0.1), rgba(106, 17, 203, 0.05));
+  border-bottom: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.modal-content p {
-    margin: 10px 0;
-    color: #e6e9fb;
+.modal-body {
+  padding: 20px;
 }
 
-.modal-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    justify-content: flex-end;
+.modal-body p {
+  margin: 10px 0;
+  color: #e6e9fb;
 }
 
-.modal-buttons button {
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9em;
+.modal-body .warning-text {
+  color: #ffaa66;
+  font-size: 0.85em;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.modal-buttons .confirm {
-    background: #28a745;
-    color: white;
-    border: none;
+.modal-footer {
+  padding: 16px 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.modal-buttons .confirm:hover {
-    background: #218838;
+.modal-btn {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
 }
 
-.modal-buttons .cancel {
-    background: var(--panel);
-    border: 1px solid #39417b;
-    color: #e6e9fb;
+.modal-btn.confirm {
+  background: #28a745;
+  color: white;
 }
 
-.modal-buttons .cancel:hover {
-    background: #1b2244;
+.modal-btn.confirm:hover {
+  background: #218838;
+  transform: translateY(-2px);
 }
 
-/* Адаптивность */
+.modal-btn.cancel {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.modal-btn.cancel:hover {
+  background: rgba(220, 53, 69, 0.3);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-message, .error-message {
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+.success-message {
+  background: rgba(40, 167, 69, 0.1);
+  border-left: 3px solid #28a745;
+  color: #28a745;
+}
+
+.error-message {
+  background: rgba(220, 53, 69, 0.1);
+  border-left: 3px solid #dc3545;
+  color: #ffaaaa;
+}
+
 @media (max-width: 768px) {
-    .booking-item {
-        flex-direction: column;
-    }
+  .bookings-container {
+    padding: 16px;
+  }
 
-    .booking-status {
-        margin-left: 0;
-        margin-top: 15px;
-        width: 100%;
-    }
+  .booking-card-header {
+    flex-wrap: wrap;
+  }
 
-    .booking-actions {
-        flex-direction: row;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+  .booking-status-badge {
+    width: 100%;
+    text-align: center;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    justify-content: center;
+  }
 }
 </style>
-
-<!-- Модальное окно для подтверждения оплаты -->
-<div id="payModal" class="modal">
-    <div class="modal-content">
-        <h3>💳 Внесение предоплаты</h3>
-        <p>Вы действительно хотите внести предоплату?</p>
-        <p><strong id="payModalQuestTitle"></strong></p>
-        <p><strong id="payModalAmount"></strong></p>
-        <p style="color: #ffaa66;">⚠️ После оплаты предоплата не возвращается!</p>
-        <div class="modal-buttons">
-            <button class="confirm" id="confirmPay">✅ Оплатить</button>
-            <button class="cancel" id="closePayModal">❌ Отмена</button>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно для подтверждения отмены -->
-<div id="cancelModal" class="modal">
-    <div class="modal-content">
-        <h3>❌ Отмена бронирования</h3>
-        <p>Вы действительно хотите отменить бронирование?</p>
-        <p><strong id="cancelModalQuestTitle"></strong></p>
-        <p><strong id="cancelModalBookingDate"></strong></p>
-        <p style="color: #ffaa66;">⚠️ Предоплата не возвращается!</p>
-        <div class="modal-buttons">
-            <button class="confirm" id="confirmCancel">✅ Да, отменить</button>
-            <button class="cancel" id="closeCancelModal">❌ Нет, вернуться</button>
-        </div>
-    </div>
-</div>
 
 <script>
 let currentPayBookingId = null;
 let currentCancelBookingId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Модальное окно для оплаты
-    const payModal = document.getElementById('payModal');
-    const confirmPayBtn = document.getElementById('confirmPay');
-    const closePayModalBtn = document.getElementById('closePayModal');
-    const payModalQuestTitle = document.getElementById('payModalQuestTitle');
-    const payModalAmount = document.getElementById('payModalAmount');
+  const payModal = document.getElementById('payModal');
+  const confirmPayBtn = document.getElementById('confirmPay');
+  const closePayModalBtn = document.getElementById('closePayModal');
+  const payModalQuestTitle = document.getElementById('payModalQuestTitle');
+  const payModalAmount = document.getElementById('payModalAmount');
 
-    // Модальное окно для отмены
-    const cancelModal = document.getElementById('cancelModal');
-    const confirmCancelBtn = document.getElementById('confirmCancel');
-    const closeCancelModalBtn = document.getElementById('closeCancelModal');
-    const cancelModalQuestTitle = document.getElementById('cancelModalQuestTitle');
-    const cancelModalBookingDate = document.getElementById('cancelModalBookingDate');
+  const cancelModal = document.getElementById('cancelModal');
+  const confirmCancelBtn = document.getElementById('confirmCancel');
+  const closeCancelModalBtn = document.getElementById('closeCancelModal');
+  const cancelModalQuestTitle = document.getElementById('cancelModalQuestTitle');
+  const cancelModalBookingDate = document.getElementById('cancelModalBookingDate');
 
-    // Закрытие модальных окон
-    function closePayModal() {
-        payModal.style.display = 'none';
-        currentPayBookingId = null;
+  function closePayModal() {
+    payModal.style.display = 'none';
+    currentPayBookingId = null;
+  }
+
+  function closeCancelModal() {
+    cancelModal.style.display = 'none';
+    currentCancelBookingId = null;
+  }
+
+  closePayModalBtn.addEventListener('click', closePayModal);
+  closeCancelModalBtn.addEventListener('click', closeCancelModal);
+
+  payModal.addEventListener('click', function(e) { if (e.target === payModal) closePayModal(); });
+  cancelModal.addEventListener('click', function(e) { if (e.target === cancelModal) closeCancelModal(); });
+
+  document.querySelectorAll('.pay-prepayment').forEach(btn => {
+    btn.addEventListener('click', function() {
+      currentPayBookingId = this.dataset.bookingId;
+      payModalQuestTitle.textContent = `Квест: ${this.dataset.questTitle}`;
+      payModalAmount.textContent = `Сумма: ${this.dataset.prepayment}₽`;
+      payModal.style.display = 'flex';
+    });
+  });
+
+  confirmPayBtn.addEventListener('click', async function() {
+    if (!currentPayBookingId) return;
+    try {
+      const response = await fetch(`/pay-prepayment/${currentPayBookingId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const result = await response.json();
+      if (response.ok) {
+        alert(`✅ ${result.message}`);
+        closePayModal();
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alert(`❌ ${result.message}`);
+        closePayModal();
+      }
+    } catch (error) {
+      alert('❌ Ошибка при оплате');
+      closePayModal();
     }
+  });
 
-    function closeCancelModal() {
-        cancelModal.style.display = 'none';
-        currentCancelBookingId = null;
+  document.querySelectorAll('.cancel-booking').forEach(btn => {
+    btn.addEventListener('click', function() {
+      currentCancelBookingId = this.dataset.bookingId;
+      cancelModalQuestTitle.textContent = `Квест: ${this.dataset.questTitle}`;
+      cancelModalBookingDate.textContent = `Дата: ${this.dataset.bookingDate}`;
+      cancelModal.style.display = 'flex';
+    });
+  });
+
+  confirmCancelBtn.addEventListener('click', async function() {
+    if (!currentCancelBookingId) return;
+    try {
+      const response = await fetch(`/cancel-booking/${currentCancelBookingId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const result = await response.json();
+      if (response.ok) {
+        alert('✅ Бронирование успешно отменено');
+        closeCancelModal();
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alert(`❌ ${result.message}`);
+        closeCancelModal();
+      }
+    } catch (error) {
+      alert('❌ Ошибка при отмене бронирования');
+      closeCancelModal();
     }
+  });
 
-    closePayModalBtn.addEventListener('click', closePayModal);
-    closeCancelModalBtn.addEventListener('click', closeCancelModal);
-
-    // Закрытие при клике вне окна
-    payModal.addEventListener('click', function(e) {
-        if (e.target === payModal) closePayModal();
+  document.querySelectorAll('.download-receipt').forEach(btn => {
+    btn.addEventListener('click', function() {
+      let paymentMethodText = this.dataset.paymentMethod === 'card' ? 'Банковская карта' : 'СБП';
+      let paymentStatusText = this.dataset.paymentStatus === 'prepayment_paid' ? '✅ Предоплата внесена' : '⏳ Ожидает предоплату';
+      fetch('/download-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quest_title: this.dataset.questTitle,
+          quest_price: this.dataset.questPrice,
+          prepayment: this.dataset.prepayment,
+          payment_method: paymentMethodText,
+          payment_status: paymentStatusText
+        })
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `чек_${this.dataset.questTitle.replace(/\s+/g, '_')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => alert('Ошибка при скачивании чека'));
     });
-
-    cancelModal.addEventListener('click', function(e) {
-        if (e.target === cancelModal) closeCancelModal();
-    });
-
-    // Кнопки внесения предоплаты
-    document.querySelectorAll('.pay-prepayment').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const bookingId = this.dataset.bookingId;
-            const questTitle = this.dataset.questTitle;
-            const prepayment = this.dataset.prepayment;
-
-            currentPayBookingId = bookingId;
-            payModalQuestTitle.textContent = `Квест: ${questTitle}`;
-            payModalAmount.textContent = `Сумма: ${prepayment}₽`;
-            payModal.style.display = 'flex';
-        });
-    });
-
-    // Подтверждение оплаты
-    confirmPayBtn.addEventListener('click', async function() {
-        if (!currentPayBookingId) return;
-
-        try {
-            const response = await fetch(`/pay-prepayment/${currentPayBookingId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert(`✅ ${result.message}`);
-                closePayModal();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                alert(`❌ ${result.message}`);
-                closePayModal();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('❌ Ошибка при оплате');
-            closePayModal();
-        }
-    });
-
-    // Кнопки отмены бронирования
-    document.querySelectorAll('.cancel-booking').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const bookingId = this.dataset.bookingId;
-            const questTitle = this.dataset.questTitle;
-            const bookingDate = this.dataset.bookingDate;
-
-            currentCancelBookingId = bookingId;
-            cancelModalQuestTitle.textContent = `Квест: ${questTitle}`;
-            cancelModalBookingDate.textContent = `Дата: ${bookingDate}`;
-            cancelModal.style.display = 'flex';
-        });
-    });
-
-    // Подтверждение отмены
-    confirmCancelBtn.addEventListener('click', async function() {
-        if (!currentCancelBookingId) return;
-
-        try {
-            const response = await fetch(`/cancel-booking/${currentCancelBookingId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert('✅ Бронирование успешно отменено');
-                closeCancelModal();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                alert(`❌ ${result.message}`);
-                closeCancelModal();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('❌ Ошибка при отмене бронирования');
-            closeCancelModal();
-        }
-    });
-
-    // Скачивание чека
-    document.querySelectorAll('.download-receipt').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const questTitle = this.dataset.questTitle;
-            const questPrice = this.dataset.questPrice;
-            const prepayment = this.dataset.prepayment;
-            const paymentMethod = this.dataset.paymentMethod;
-            const paymentStatus = this.dataset.paymentStatus;
-
-            let paymentMethodText = '';
-            if (paymentMethod === 'card') paymentMethodText = 'Банковская карта';
-            else if (paymentMethod === 'sbp') paymentMethodText = 'СБП';
-
-            let paymentStatusText = paymentStatus === 'prepayment_paid' ? '✅ Предоплата внесена' : '⏳ Ожидает предоплату';
-
-            fetch('/download-receipt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    quest_title: questTitle,
-                    quest_price: questPrice,
-                    prepayment: prepayment,
-                    payment_method: paymentMethodText,
-                    payment_status: paymentStatusText
-                })
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `чек_${questTitle.replace(/\s+/g, '_')}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => {
-                console.error('Ошибка:', error);
-                alert('Ошибка при скачивании чека');
-            });
-        });
-    });
+  });
 });
 </script>
 {% endblock %}

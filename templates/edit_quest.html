@@ -1,216 +1,655 @@
 {% extends "base.html" %}
 {% block title %}Редактировать квест{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Редактировать квест: {{ quest.title }}</h2>
+<div class="form-page">
+  <div class="form-container">
+    <div class="form-header">
+      <a href="/admin" class="back-link">← Назад к панели</a>
+      <div class="header-content">
+        <div class="header-icon">✏️</div>
+        <div class="header-text">
+          <h1>Редактировать квест</h1>
+          <p>Измените информацию о квесте "{{ quest.title }}"</p>
+        </div>
+      </div>
+    </div>
 
-    <form action="/admin/edit/{{ quest.id }}" method="post" enctype="multipart/form-data" class="admin-form" id="editForm">
-        <label>Название<br>
-            <input type="text" name="title" id="title" value="{{ quest.title }}" required>
-        </label>
+    <form action="/admin/edit/{{ quest.id }}" method="post" enctype="multipart/form-data" class="quest-form" id="editForm">
+      <!-- Основная информация -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">📝</span>
+          <h3>Основная информация</h3>
+        </div>
 
-        <label>Описание<br>
-            <textarea name="description" id="description" rows="4" required>{{ quest.description }}</textarea>
-        </label>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="title">
+              <span class="label-icon">🏷️</span>
+              <span>Название квеста</span>
+              <span class="required">*</span>
+            </label>
+            <input type="text" name="title" id="title" value="{{ quest.title }}" required class="form-input">
+          </div>
+        </div>
 
-        <label>Жанр (выберите хотя бы один)<br>
-            <div class="checkbox-group" id="genresGroup">
-                {% set current_genres = quest.genre.split(', ') %}
-                <label><input type="checkbox" name="genres" value="детям" {% if "детям" in current_genres %}checked{% endif %}> Детям</label>
-                <label><input type="checkbox" name="genres" value="страшные" {% if "страшные" in current_genres %}checked{% endif %}> Страшные</label>
-                <label><input type="checkbox" name="genres" value="веселые" {% if "веселые" in current_genres %}checked{% endif %}> Весёлые</label>
-                <label><input type="checkbox" name="genres" value="с актерами" {% if "с актерами" in current_genres %}checked{% endif %}> С актёрами</label>
-                <label><input type="checkbox" name="genres" value="без актеров" {% if "без актеров" in current_genres %}checked{% endif %}> Без актёров</label>
-                <label><input type="checkbox" name="genres" value="нестрашные" {% if "нестрашные" in current_genres %}checked{% endif %}> Нестрашные</label>
-                <label><input type="checkbox" name="genres" value="загадки" {% if "загадки" in current_genres %}checked{% endif %}> Загадки</label>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="description">
+              <span class="label-icon">📖</span>
+              <span>Описание</span>
+              <span class="required">*</span>
+            </label>
+            <textarea name="description" id="description" rows="5" required class="form-textarea">{{ quest.description }}</textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="address">
+              <span class="label-icon">📍</span>
+              <span>Адрес проведения</span>
+              <span class="required">*</span>
+            </label>
+            <input type="text" name="address" id="address" value="{{ quest.address }}" required class="form-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Характеристики -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">⚙️</span>
+          <h3>Характеристики</h3>
+        </div>
+
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="genre-group">
+              <span class="label-icon">🎭</span>
+              <span>Жанры</span>
+              <span class="required">*</span>
+            </label>
+            <div class="checkbox-grid" id="genresGroup">
+              {% set current_genres = quest.genre.split(', ') %}
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="детям" {% if "детям" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>👶 Детям</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="страшные" {% if "страшные" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>😱 Страшные</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="веселые" {% if "веселые" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>😄 Весёлые</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="с актерами" {% if "с актерами" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>🎭 С актёрами</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="без актеров" {% if "без актеров" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>🤖 Без актёров</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="нестрашные" {% if "нестрашные" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>😌 Нестрашные</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="genres" value="загадки" {% if "загадки" in current_genres %}checked{% endif %}>
+                <span class="checkbox-custom"></span>
+                <span>🧩 Загадки</span>
+              </label>
             </div>
-            <div class="error-message" id="genresError" style="display: none; color: #dc3545; margin-top: 5px;">
-                Выберите хотя бы один жанр
-            </div>
-        </label>
+            <div class="error-message" id="genresError" style="display: none;">Выберите хотя бы один жанр</div>
+          </div>
 
-        <label>Сложность<br>
-            <select name="difficulty" id="difficulty" required>
-                <option value="">Выберите сложность</option>
-                <option value="легкий" {% if quest.difficulty == "легкий" %}selected{% endif %}>Лёгкий</option>
-                <option value="нормальный" {% if quest.difficulty == "нормальный" %}selected{% endif %}>Нормальный</option>
-                <option value="сложный" {% if quest.difficulty == "сложный" %}selected{% endif %}>Сложный</option>
-                <option value="экстремальный" {% if quest.difficulty == "экстремальный" %}selected{% endif %}>Экстремальный</option>
+          <div class="form-group">
+            <label for="difficulty">
+              <span class="label-icon">⚡</span>
+              <span>Сложность</span>
+              <span class="required">*</span>
+            </label>
+            <select name="difficulty" id="difficulty" required class="form-select">
+              <option value="">Выберите сложность</option>
+              <option value="легкий" {% if quest.difficulty == "легкий" %}selected{% endif %}>🌿 Лёгкий</option>
+              <option value="нормальный" {% if quest.difficulty == "нормальный" %}selected{% endif %}>⭐ Нормальный</option>
+              <option value="сложный" {% if quest.difficulty == "сложный" %}selected{% endif %}>🔥 Сложный</option>
+              <option value="экстремальный" {% if quest.difficulty == "экстремальный" %}selected{% endif %}>💀 Экстремальный</option>
             </select>
-        </label>
+          </div>
+        </div>
 
-        <label>Уровень страха (1-5)<br>
-            <input type="number" name="fear_level" id="fear_level" min="1" max="5" value="{{ quest.fear_level }}" required>
-        </label>
-
-        <label>Максимальное количество игроков<br>
-            <input type="number" name="max_players" id="max_players" min="1" max="6" value="{{ quest.max_players }}" required>
-            <div class="error-message" id="playersError" style="display: none; color: #dc3545; margin-top: 5px;">
-                Укажите количество игроков
+        <div class="form-row three-cols">
+          <div class="form-group">
+            <label for="fear_level">
+              <span class="label-icon">😱</span>
+              <span>Уровень страха</span>
+              <span class="required">*</span>
+            </label>
+            <div class="fear-selector">
+              <input type="range" name="fear_level" id="fear_level" min="1" max="5" value="{{ quest.fear_level }}" step="1" class="fear-slider">
+              <div class="fear-stars-display" id="fear-stars-display">{{ '★' * quest.fear_level }}{{ '☆' * (5 - quest.fear_level) }}</div>
             </div>
-        </label>
+          </div>
 
-        <label>Адрес проведения квеста<br>
-            <input type="text" name="address" id="address" value="{{ quest.address }}" required>
-        </label>
+          <div class="form-group">
+            <label for="min_players">
+              <span class="label-icon">👥</span>
+              <span>Мин. игроков</span>
+              <span class="required">*</span>
+            </label>
+            <input type="number" name="min_players" id="min_players" min="1" max="6" value="{{ quest.min_players }}" required class="form-input">
+          </div>
 
-        <label>Цена (руб.)<br>
-            <input type="number" name="price" id="price" min="0" step="100" value="{{ quest.price }}" required>
-        </label>
+          <div class="form-group">
+            <label for="max_players">
+              <span class="label-icon">👥</span>
+              <span>Макс. игроков</span>
+              <span class="required">*</span>
+            </label>
+            <input type="number" name="max_players" id="max_players" min="1" max="6" value="{{ quest.max_players }}" required class="form-input">
+            <div class="error-message" id="playersError" style="display: none;">Минимум не может быть больше максимума</div>
+          </div>
+        </div>
 
-        <label>Текущее изображение:<br>
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="price">
+              <span class="label-icon">💰</span>
+              <span>Цена (руб)</span>
+              <span class="required">*</span>
+            </label>
+            <input type="number" name="price" id="price" min="0" step="100" value="{{ quest.price }}" required class="form-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Изображение -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">🖼️</span>
+          <h3>Изображение квеста</h3>
+        </div>
+
+        <div class="current-image">
+          <label>Текущее изображение:</label>
+          <div class="current-image-preview">
             {% if quest.image_data %}
-                <img src="/api/quest-image/{{ quest.id }}" alt="{{ quest.title }}" style="max-width: 200px; margin: 10px 0;">
+            <img src="/api/quest-image/{{ quest.id }}" alt="{{ quest.title }}">
             {% elif quest.image_path %}
-                <img src="/static/{{ quest.image_path }}" alt="{{ quest.title }}" style="max-width: 200px; margin: 10px 0;">
+            <img src="/static/{{ quest.image_path }}" alt="{{ quest.title }}">
             {% else %}
-                <span>Нет изображения</span>
+            <div class="no-image">Нет изображения</div>
             {% endif %}
-        </label>
+          </div>
+        </div>
 
-        <label>Новое изображение квеста<br>
-            <input type="file" name="image" id="image" accept="image/*">
-            <div id="imagePreview" style="margin-top: 10px;"></div>
-            <small style="color: var(--muted);">Выберите файл изображения (JPG, PNG, GIF)</small>
-        </label>
+        <div class="image-upload-area">
+          <div class="upload-preview" id="imagePreview">
+            <div class="upload-placeholder">
+              <div class="placeholder-icon">📸</div>
+              <p>Выберите новое изображение для замены</p>
+              <small>PNG, JPG, GIF до 5MB</small>
+            </div>
+          </div>
+          <input type="file" name="image" id="image" accept="image/*" class="image-input">
+          <label for="image" class="upload-btn">Выбрать новое изображение</label>
+        </div>
+      </div>
 
-        <button type="submit" class="btn">Сохранить изменения</button>
-        <a href="/admin" class="btn outline" style="margin-left: 10px;">Отмена</a>
+      <!-- Кнопки действий -->
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">
+          <span class="btn-icon">💾</span>
+          Сохранить изменения
+          <span class="btn-arrow">→</span>
+        </button>
+        <a href="/admin" class="cancel-btn">Отмена</a>
+      </div>
     </form>
+  </div>
 </div>
 
 <style>
-.admin-form {
-    max-width: 600px;
-    margin: 0 auto;
+/* Все стили такие же как в add_quest.html, плюс дополнительные для текущего изображения */
+.current-image {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--panel);
+  border-radius: 16px;
 }
 
-.admin-form input,
-.admin-form select,
-.admin-form textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0 15px 0;
-    border: 1px solid #39417b;
-    border-radius: 8px;
-    background: #0b1330;
-    color: #e6e9fb;
-    box-sizing: border-box;
+.current-image label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.85em;
+  color: var(--muted);
+  font-weight: 500;
 }
 
-.admin-form input:invalid,
-.admin-form select:invalid,
-.admin-form textarea:invalid {
-    border-color: #dc3545;
+.current-image-preview {
+  text-align: center;
 }
 
-.admin-form input:focus:invalid,
-.admin-form select:focus:invalid,
-.admin-form textarea:focus:invalid {
-    outline: none;
-    border-color: #dc3545;
+.current-image-preview img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 12px;
+  object-fit: cover;
 }
 
-.admin-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #e6e9fb;
+.no-image {
+  padding: 30px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
 }
 
-.checkbox-group {
-    background: #0b1330;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #39417b;
-    margin-bottom: 5px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
+/* Остальные стили такие же как в add_quest.html */
+.form-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px;
 }
 
-.checkbox-group label {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0;
-    font-weight: normal;
-    cursor: pointer;
+.form-container {
+  background: var(--card);
+  border-radius: 32px;
+  border: 1px solid rgba(68, 74, 247, 0.2);
+  overflow: hidden;
 }
 
-.checkbox-group input[type="checkbox"] {
-    width: auto;
-    margin-right: 10px;
-    margin-bottom: 0;
+.form-header {
+  background: linear-gradient(135deg, #1a1f3a, #121734);
+  padding: 28px 32px;
+  border-bottom: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.checkbox-group.error {
-    border-color: #dc3545;
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85em;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 30px;
+  transition: all 0.3s;
+  margin-bottom: 20px;
+}
+
+.back-link:hover {
+  color: var(--accent);
+  transform: translateX(-4px);
+  background: rgba(68, 74, 247, 0.2);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-icon {
+  font-size: 3em;
+  background: rgba(68, 74, 247, 0.2);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+}
+
+.header-text h1 {
+  margin: 0 0 6px 0;
+  font-size: 1.6em;
+  background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-text p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.quest-form {
+  padding: 32px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(68, 74, 247, 0.1);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.section-icon {
+  font-size: 1.3em;
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #e6e9fb;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}
+
+.form-row.two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.form-row.three-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: #b0b6e6;
+}
+
+.label-icon {
+  font-size: 1em;
+}
+
+.required {
+  color: #dc3545;
+  font-size: 0.9em;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid #2a2f4e;
+  border-radius: 12px;
+  color: #e6e9fb;
+  font-size: 0.95em;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(68, 74, 247, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  background: var(--panel);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #2a2f4e;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.checkbox-item input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #2a2f4e;
+  border-radius: 4px;
+  background: var(--panel);
+  transition: all 0.2s;
+}
+
+.checkbox-item input:checked + .checkbox-custom {
+  background: var(--accent);
+  border-color: var(--accent);
+  position: relative;
+}
+
+.checkbox-item input:checked + .checkbox-custom::after {
+  content: "✓";
+  color: white;
+  font-size: 12px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.checkbox-item:hover .checkbox-custom {
+  border-color: var(--accent);
+}
+
+.fear-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fear-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  background: #2a2f4e;
+  border-radius: 2px;
+  outline: none;
+}
+
+.fear-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fear-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.fear-stars-display {
+  font-size: 1.1em;
+  letter-spacing: 2px;
+  color: gold;
+  text-align: center;
+}
+
+.image-upload-area {
+  text-align: center;
+  padding: 24px;
+  background: var(--panel);
+  border-radius: 16px;
+  border: 2px dashed #2a2f4e;
+  transition: all 0.3s;
+}
+
+.image-upload-area:hover {
+  border-color: var(--accent);
+}
+
+.upload-preview {
+  margin-bottom: 16px;
+  min-height: 150px;
+}
+
+.upload-placeholder {
+  padding: 30px;
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 3em;
+  margin-bottom: 12px;
+}
+
+.upload-placeholder p {
+  margin: 0 0 6px;
+  color: #b0b6e6;
+}
+
+.upload-placeholder small {
+  color: var(--muted);
+  font-size: 0.75em;
+}
+
+.image-input {
+  display: none;
+}
+
+.upload-btn {
+  display: inline-block;
+  background: rgba(68, 74, 247, 0.2);
+  color: var(--accent);
+  padding: 10px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.3s;
+}
+
+.upload-btn:hover {
+  background: rgba(68, 74, 247, 0.3);
+  transform: translateY(-2px);
+}
+
+.form-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(68, 74, 247, 0.1);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  border: none;
+  padding: 12px 28px;
+  border-radius: 40px;
+  color: white;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #3a44e0, #4a54f5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+}
+
+.submit-btn .btn-arrow {
+  transition: transform 0.3s;
+}
+
+.submit-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid #2a2f4e;
+  padding: 12px 28px;
+  border-radius: 40px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95em;
+  transition: all 0.3s;
+}
+
+.cancel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
 }
 
 .error-message {
-    font-size: 0.9em;
-    margin-bottom: 10px;
+  font-size: 0.75em;
+  color: #ffaaaa;
+  margin-top: 6px;
 }
 
-input[type="file"] {
-    width: 100%;
-    padding: 8px;
-    margin: 5px 0 10px 0;
-    border: 1px solid #39417b;
-    border-radius: 6px;
-    background: #0b1330;
-    color: #e6e9fb;
-    cursor: pointer;
+.input-hint {
+  font-size: 0.7em;
+  color: var(--muted);
+  margin-top: 6px;
 }
 
-input[type="file"]::file-selector-button {
-    background: var(--btn);
-    color: white;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-right: 10px;
-    transition: background 0.2s;
-}
+@media (max-width: 768px) {
+  .form-page {
+    padding: 16px;
+  }
 
-input[type="file"]::file-selector-button:hover {
-    background: #3a44e0;
-}
+  .form-row.two-cols,
+  .form-row.three-cols {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 
-.btn {
-    background: var(--btn);
-    padding: 10px 20px;
-    border-radius: 8px;
-    color: white;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1em;
-    margin-right: 10px;
-    transition: background 0.2s;
-}
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
 
-.btn:hover {
-    background: #3a44e0;
-}
+  .form-actions {
+    flex-direction: column;
+  }
 
-.btn.outline {
-    background: transparent;
-    border: 1px solid #39417b;
-    color: #dfe6ff;
-}
-
-.btn.outline:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-.btn.danger {
-    background: #b33a3a;
-}
-
-.btn.danger:hover {
-    background: #9a2e2e;
+  .submit-btn, .cancel-btn {
+    text-align: center;
+    justify-content: center;
+  }
 }
 </style>
 
@@ -222,19 +661,47 @@ document.getElementById('image').addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const preview = document.getElementById('imagePreview');
-            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`;
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 12px; object-fit: cover;">`;
         };
         reader.readAsDataURL(file);
-    } else {
-        document.getElementById('imagePreview').innerHTML = '';
     }
 });
 
-// Валидация формы редактирования
+// Уровень страха - слайдер
+const fearSlider = document.getElementById('fear_level');
+const fearStarsDisplay = document.getElementById('fear-stars-display');
+
+fearSlider.addEventListener('input', function() {
+    const value = parseInt(this.value);
+    const stars = '★'.repeat(value) + '☆'.repeat(5 - value);
+    fearStarsDisplay.textContent = stars;
+});
+
+// Валидация формы
 document.getElementById('editForm').addEventListener('submit', function(e) {
     let isValid = true;
 
-    // Проверка названия
+    const genres = document.querySelectorAll('input[name="genres"]:checked');
+    const genresError = document.getElementById('genresError');
+
+    if (genres.length === 0) {
+        genresError.style.display = 'block';
+        isValid = false;
+    } else {
+        genresError.style.display = 'none';
+    }
+
+    const minPlayers = document.getElementById('min_players');
+    const maxPlayers = document.getElementById('max_players');
+    const playersError = document.getElementById('playersError');
+
+    if (!minPlayers.value || !maxPlayers.value || parseInt(minPlayers.value) > parseInt(maxPlayers.value)) {
+        playersError.style.display = 'block';
+        isValid = false;
+    } else {
+        playersError.style.display = 'none';
+    }
+
     const title = document.getElementById('title');
     if (!title.value.trim()) {
         title.style.borderColor = '#dc3545';
@@ -243,7 +710,6 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         title.style.borderColor = '';
     }
 
-    // Проверка описания
     const description = document.getElementById('description');
     if (!description.value.trim()) {
         description.style.borderColor = '#dc3545';
@@ -252,7 +718,6 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         description.style.borderColor = '';
     }
 
-    // Проверка адреса
     const address = document.getElementById('address');
     if (!address.value.trim()) {
         address.style.borderColor = '#dc3545';
@@ -261,58 +726,12 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         address.style.borderColor = '';
     }
 
-    // Проверка жанров
-    const genres = document.querySelectorAll('input[name="genres"]:checked');
-    const genresGroup = document.getElementById('genresGroup');
-    const genresError = document.getElementById('genresError');
-
-    if (genres.length === 0) {
-        genresGroup.classList.add('error');
-        genresError.style.display = 'block';
-        isValid = false;
-    } else {
-        genresGroup.classList.remove('error');
-        genresError.style.display = 'none';
-    }
-
-    // Проверка сложности
     const difficulty = document.getElementById('difficulty');
     if (!difficulty.value) {
         difficulty.style.borderColor = '#dc3545';
         isValid = false;
     } else {
         difficulty.style.borderColor = '';
-    }
-
-    // Проверка уровня страха
-    const fearLevel = document.getElementById('fear_level');
-    if (!fearLevel.value || fearLevel.value < 1 || fearLevel.value > 5) {
-        fearLevel.style.borderColor = '#dc3545';
-        isValid = false;
-    } else {
-        fearLevel.style.borderColor = '';
-    }
-
-    // Проверка количества игроков
-    const players = document.getElementById('max_players');
-    const playersError = document.getElementById('playersError');
-
-    if (!players.value || players.value < 1 || players.value > 6) {
-        players.style.borderColor = '#dc3545';
-        playersError.style.display = 'block';
-        isValid = false;
-    } else {
-        players.style.borderColor = '';
-        playersError.style.display = 'none';
-    }
-
-    // Проверка цены
-    const price = document.getElementById('price');
-    if (!price.value || price.value < 0) {
-        price.style.borderColor = '#dc3545';
-        isValid = false;
-    } else {
-        price.style.borderColor = '';
     }
 
     if (!isValid) {
@@ -322,49 +741,9 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
 });
 
 // Убираем ошибки при вводе
-document.getElementById('title').addEventListener('input', function() {
-    if (this.value.trim()) this.style.borderColor = '';
-});
-
-document.getElementById('description').addEventListener('input', function() {
-    if (this.value.trim()) this.style.borderColor = '';
-});
-
-document.getElementById('address').addEventListener('input', function() {
-    if (this.value.trim()) this.style.borderColor = '';
-});
-
-document.getElementById('difficulty').addEventListener('change', function() {
-    if (this.value) this.style.borderColor = '';
-});
-
-document.getElementById('fear_level').addEventListener('input', function() {
-    if (this.value && this.value >= 1 && this.value <= 5) this.style.borderColor = '';
-});
-
-document.getElementById('max_players').addEventListener('input', function() {
-    const playersError = document.getElementById('playersError');
-    if (this.value && this.value >= 1 && this.value <= 6) {
-        this.style.borderColor = '';
-        playersError.style.display = 'none';
-    }
-});
-
-document.getElementById('price').addEventListener('input', function() {
-    if (this.value && this.value >= 0) this.style.borderColor = '';
-});
-
-// Убираем ошибку при выборе жанра
-document.querySelectorAll('input[name="genres"]').forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-        const genres = document.querySelectorAll('input[name="genres"]:checked');
-        const genresGroup = document.getElementById('genresGroup');
-        const genresError = document.getElementById('genresError');
-
-        if (genres.length > 0) {
-            genresGroup.classList.remove('error');
-            genresError.style.display = 'none';
-        }
+document.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(field => {
+    field.addEventListener('input', function() {
+        if (this.value.trim()) this.style.borderColor = '';
     });
 });
 </script>

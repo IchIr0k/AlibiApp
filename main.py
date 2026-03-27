@@ -76,15 +76,14 @@ def save_upload(file: UploadFile) -> str:
 def index(
         request: Request,
         q: Optional[str] = None,
-        genre: Optional[List[str]] = Query(None),  # <-- Важно: Query(None)
-        difficulty: Optional[List[str]] = Query(None),  # <-- Важно: Query(None)
+        genre: Optional[List[str]] = Query(None),
+        difficulty: Optional[List[str]] = Query(None),
         fear_level: Optional[str] = None,
         players: Optional[str] = None,
         sort: Optional[str] = None,
         skip: int = 0,
         db: Session = Depends(get_db)
 ):
-    # Добавьте отладочный вывод
     print(f"DEBUG - genre: {genre}")
     print(f"DEBUG - difficulty: {difficulty}")
 
@@ -138,6 +137,11 @@ def quest_detail(request: Request, quest_id: int, db: Session = Depends(get_db))
     if not quest:
         raise HTTPException(status_code=404, detail="Quest not found")
 
+    # Получаем количество отзывов
+    reviews_count = db.query(models.Review).filter(
+        models.Review.quest_id == quest_id
+    ).count()
+
     try:
         booked_slots = crud.get_booked_slots_for_date(db, quest_id, naive_now().strftime('%Y-%m-%d'))
     except:
@@ -153,7 +157,8 @@ def quest_detail(request: Request, quest_id: int, db: Session = Depends(get_db))
         "quest": quest,
         "user": user,
         "booked_slots": booked_slots,
-        "now": naive_now
+        "now": naive_now,
+        "reviews_count": reviews_count
     })
 
 
@@ -174,15 +179,12 @@ def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
     try:
         user = get_current_user(request, db)
 
-        # Проверяем, что выбран способ оплаты
         if not payment_method:
             return JSONResponse({"success": False, "message": "Выберите способ оплаты"}, status_code=400)
 
-        # Проверяем допустимые способы оплаты
         if payment_method not in ['card', 'sbp']:
             return JSONResponse({"success": False, "message": "Недопустимый способ оплаты"}, status_code=400)
 
-        # Проверяем, что бронирование не менее чем за 24 часа
         booking_datetime = datetime.strptime(f"{date} {timeslot}", "%Y-%m-%d %H:%M")
         current_time = naive_now()
         hours_diff = (booking_datetime - current_time).total_seconds() / 3600
@@ -199,7 +201,6 @@ def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
         if not booking:
             return JSONResponse({"success": False, "message": "Слот уже занят или произошла ошибка"}, status_code=400)
 
-        # Возвращаем информацию о предоплате
         return JSONResponse({
             "success": True,
             "message": f"Бронь создана! Требуется внести предоплату {booking.prepayment}₽",
@@ -247,7 +248,6 @@ def login_post(request: Request, username: str = Form(...), password: str = Form
     if not user or not verify_password(password, user.hashed_password):
         return templates.TemplateResponse("login.html", {"request": request, "error": "Неверный логин или пароль"})
 
-    # Обновляем last_login
     user.last_login = now_with_tz()
     db.commit()
 
@@ -264,20 +264,17 @@ def register_get(request: Request):
 def register_post(request: Request, username: str = Form(...), email: str = Form(...),
                   password: str = Form(...),
                   db: Session = Depends(get_db)):
-    # Проверяем существование пользователя
     if db.query(models.User).filter_by(username=username).first():
         return templates.TemplateResponse("register.html", {"request": request, "error": "Имя занято"})
 
     if db.query(models.User).filter_by(email=email).first():
         return templates.TemplateResponse("register.html", {"request": request, "error": "Email уже используется"})
 
-    # Проверка email на валидность
     import re
     email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
     if not re.match(email_pattern, email):
         return templates.TemplateResponse("register.html", {"request": request, "error": "Введите корректный email"})
 
-    # Создаем нового пользователя
     u = models.User(
         username=username,
         email=email,
@@ -305,14 +302,20 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db), user=Depend
     try:
         quests = crud.get_quests(db, skip=0, limit=1000, filters={})
         all_bookings = crud.get_all_bookings(db)
+        stats = crud.get_quest_statistics(db)
 
-        # Получаем количество активных пользователей
+        total_quests = len(quests)
+        total_bookings = sum(s.total_bookings for s in stats) if stats else 0
+        total_revenue = sum(s.total_revenue for s in stats) if stats else 0
         active_users_count = db.query(models.User).filter(models.User.is_active == True).count()
 
     except Exception as e:
         quests = []
         all_bookings = []
         active_users_count = 0
+        total_quests = 0
+        total_bookings = 0
+        total_revenue = 0
         print(f"Admin error: {e}")
 
     return templates.TemplateResponse("admin_dashboard.html", {
@@ -321,7 +324,10 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db), user=Depend
         "user": user,
         "now": naive_now,
         "quest_bookings": all_bookings,
-        "active_users_count": active_users_count  # Добавляем эту переменную
+        "active_users_count": active_users_count,
+        "total_quests": total_quests,
+        "total_bookings": total_bookings,
+        "total_revenue": total_revenue
     })
 
 
@@ -338,6 +344,7 @@ async def add_post(
         genres: List[str] = Form(...),
         difficulty: str = Form(...),
         fear_level: int = Form(...),
+        min_players: int = Form(2),  # Добавлено поле min_players
         max_players: int = Form(...),
         address: str = Form(...),
         price: int = Form(2000),
@@ -350,12 +357,8 @@ async def add_post(
         image_path = None
         image_data = None
 
-        # Обработка изображения
         if clipboard_image and clipboard_image.startswith('data:image'):
-            # Сохраняем base64 изображение в базу данных
             image_data = clipboard_image
-
-            # Сохраняем файл локально для совместимости
             import base64
             image_bytes = base64.b64decode(clipboard_image.split(',')[1])
             safe_name = f"{uuid.uuid4().hex}.png"
@@ -365,41 +368,34 @@ async def add_post(
             image_path = f"uploads/{safe_name}"
 
         elif image and image.filename:
-            # Читаем содержимое файла и конвертируем в base64
             content = await image.read()
             import base64
-            # Определяем формат изображения
             ext = os.path.splitext(image.filename)[1].lower()
             mime_type = "image/jpeg" if ext in ['.jpg', '.jpeg'] else "image/png"
             if ext == '.gif':
                 mime_type = "image/gif"
 
-            # Создаем base64 строку
             image_data = f"data:{mime_type};base64,{base64.b64encode(content).decode('utf-8')}"
-
-            # Сохраняем файл локально
             safe_name = f"{uuid.uuid4().hex}{ext}"
             dest = os.path.join("static", "uploads", safe_name)
             with open(dest, "wb") as f:
                 f.write(content)
             image_path = f"uploads/{safe_name}"
 
-        # Объединяем выбранные жанры в строку
         genre_str = ", ".join(genres) if genres else "Не указан"
 
-        # Создание квеста
         new_quest = models.Quest(
             title=title,
             description=description,
             genre=genre_str,
             difficulty=difficulty,
             fear_level=fear_level,
+            min_players=min_players,  # Добавлено поле
             max_players=max_players,
-            min_players=2,
             address=address,
             price=price,
             image_path=image_path,
-            image_data=image_data,  # Сохраняем base64 в БД
+            image_data=image_data,
             is_active=True
         )
         db.add(new_quest)
@@ -448,12 +444,8 @@ async def edit_post(
     if not quest:
         raise HTTPException(status_code=404, detail="Quest not found")
 
-    # Обработка изображения
     if clipboard_image and clipboard_image.startswith('data:image'):
-        # Сохраняем base64 в БД
         quest.image_data = clipboard_image
-
-        # Сохраняем файл локально
         import base64
         image_bytes = base64.b64decode(clipboard_image.split(',')[1])
         safe_name = f"{uuid.uuid4().hex}.png"
@@ -463,7 +455,6 @@ async def edit_post(
         quest.image_path = f"uploads/{safe_name}"
 
     elif image and image.filename:
-        # Читаем содержимое файла и конвертируем в base64
         content = await image.read()
         import base64
         ext = os.path.splitext(image.filename)[1].lower()
@@ -471,17 +462,13 @@ async def edit_post(
         if ext == '.gif':
             mime_type = "image/gif"
 
-        # Сохраняем base64 в БД
         quest.image_data = f"data:{mime_type};base64,{base64.b64encode(content).decode('utf-8')}"
-
-        # Сохраняем файл локально
         safe_name = f"{uuid.uuid4().hex}{ext}"
         dest = os.path.join("static", "uploads", safe_name)
         with open(dest, "wb") as f:
             f.write(content)
         quest.image_path = f"uploads/{safe_name}"
 
-    # Обновляем поля
     quest.title = title
     quest.description = description
     quest.genre = ", ".join(genres) if genres else "Не указан"
@@ -527,9 +514,7 @@ def admin_delete_booking(booking_id: int, db: Session = Depends(get_db), user=De
 
 @app.post("/admin/delete/{quest_id}")
 def admin_delete(request: Request, quest_id: int, db: Session = Depends(get_db), user=Depends(require_admin)):
-    # Проверяем наличие будущих бронирований
     if crud.has_quest_bookings(db, quest_id):
-        # Если есть бронирования, показываем страницу с предупреждением
         quest = crud.get_quest(db, quest_id)
         bookings = crud.get_quest_bookings(db, quest_id)
         quests = crud.get_quests(db, skip=0, limit=1000, filters={})
@@ -543,14 +528,12 @@ def admin_delete(request: Request, quest_id: int, db: Session = Depends(get_db),
             "now": naive_now
         })
 
-    # ПОЛНОЕ УДАЛЕНИЕ из БД
     crud.delete_quest(db, quest_id)
     return RedirectResponse("/admin", status_code=303)
 
 
 @app.post("/admin/delete-quest-with-bookings/{quest_id}")
 def admin_delete_quest_with_bookings(quest_id: int, db: Session = Depends(get_db), user=Depends(require_admin)):
-    # Принудительное удаление квеста вместе со всеми бронированиями
     crud.delete_quest(db, quest_id)
     return RedirectResponse("/admin", status_code=303)
 
@@ -605,15 +588,12 @@ def write_review_form(request: Request, booking_id: int, db: Session = Depends(g
         if not booking:
             return RedirectResponse("/my-bookings", status_code=303)
 
-        # Проверяем, что квест уже прошел
         if booking.booking_date_time.replace(tzinfo=None) >= naive_now():
             return RedirectResponse("/my-bookings", status_code=303)
 
-        # Проверяем, что предоплата внесена
         if booking.payment_status != 'prepayment_paid':
             return RedirectResponse("/my-bookings", status_code=303)
 
-        # Проверяем, нет ли уже отзыва
         existing = db.query(models.Review).filter(
             models.Review.booking_id == booking_id
         ).first()
@@ -653,15 +633,12 @@ async def submit_review(request: Request, booking_id: int = Form(...),
         if not booking:
             return JSONResponse({"success": False, "message": "Бронирование не найдено"}, status_code=404)
 
-        # Проверяем, что квест уже прошел
         if booking.booking_date_time.replace(tzinfo=None) >= naive_now():
             return JSONResponse({"success": False, "message": "Отзыв можно оставить только после прохождения квеста"}, status_code=400)
 
-        # Проверяем, что предоплата внесена
         if booking.payment_status != 'prepayment_paid':
             return JSONResponse({"success": False, "message": "Отзыв можно оставить только после оплаты"}, status_code=400)
 
-        # Проверяем, не оставлял ли пользователь уже отзыв на это бронирование
         existing_review = db.query(models.Review).filter(
             models.Review.booking_id == booking_id
         ).first()
@@ -845,19 +822,16 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
 
         doc = Document()
 
-        # Настройка стилей
         style = doc.styles['Normal']
         font = style.font
         font.name = 'Arial'
         font.size = Pt(10)
 
-        # Создаем таблицу для шапки с логотипом
         header_table = doc.add_table(rows=1, cols=2)
         header_table.autofit = False
         header_table.columns[0].width = Inches(1.5)
         header_table.columns[1].width = Inches(4.5)
 
-        # Добавляем логотип в первую ячейку
         try:
             logo_path = "static/images/logo_black.png"
             if os.path.exists(logo_path):
@@ -868,7 +842,6 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
         except:
             pass
 
-        # Добавляем информацию во вторую ячейку
         info_cell = header_table.cell(0, 1)
         info_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         info_cell.paragraphs[0].add_run("Алиби\n").bold = True
@@ -877,41 +850,34 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
 
         doc.add_paragraph()
 
-        # Заголовок отчета
         report_title = doc.add_paragraph("ОТЧЕТ ПО БРОНИРОВАНИЯМ")
         report_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         report_title.runs[0].bold = True
         report_title.runs[0].font.size = Pt(14)
 
-        # Дата формирования
         date_para = doc.add_paragraph(f"Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
         date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         doc.add_paragraph()
 
-        # Создаем таблицу с данными
         if bookings:
             table = doc.add_table(rows=1, cols=6)
             table.style = 'Table Grid'
             table.autofit = False
 
-            # Устанавливаем ширину колонок
             col_widths = [0.5, 1.5, 2.0, 1.2, 1.2, 1.0]
             for i, width in enumerate(col_widths):
                 table.columns[i].width = Inches(width)
 
-            # Заголовки таблицы
             headers = ['№', 'Пользователь', 'Квест', 'Дата и время', 'Сумма', 'Статус']
             hdr_cells = table.rows[0].cells
             for i, header in enumerate(headers):
                 hdr_cells[i].text = header
                 hdr_cells[i].paragraphs[0].runs[0].bold = True
                 hdr_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # Заливаем фон заголовков
                 shading_elm = parse_xml(r'<w:shd {} w:fill="E6E6FA"/>'.format(nsdecls('w')))
                 hdr_cells[i]._tc.get_or_add_tcPr().append(shading_elm)
 
-            # Данные
             total_revenue = 0
             for i, booking in enumerate(bookings, 1):
                 row_cells = table.add_row().cells
@@ -937,7 +903,6 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
 
             doc.add_paragraph()
 
-            # Итоги
             total_para = doc.add_paragraph()
             total_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             total_para.add_run("═" * 50 + "\n").bold = True
@@ -951,18 +916,15 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
         doc.add_paragraph()
         doc.add_paragraph()
 
-        # Создаем таблицу для подписи и печати
         footer_table = doc.add_table(rows=1, cols=2)
         footer_table.autofit = False
         footer_table.columns[0].width = Inches(4.0)
         footer_table.columns[1].width = Inches(2.0)
 
-        # Подпись в левой ячейке
         sign_cell = footer_table.cell(0, 0)
         sign_cell.paragraphs[0].add_run("_________________________\n")
         sign_cell.paragraphs[0].add_run("Подпись ответственного лица")
 
-        # Печать в правой ячейке
         try:
             stamp_path = "static/images/stamp.png"
             if os.path.exists(stamp_path):
@@ -974,7 +936,6 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
         except:
             pass
 
-        # Сохраняем в буфер
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
@@ -999,43 +960,34 @@ async def report_word(db: Session = Depends(get_db), user=Depends(require_admin)
 async def report_quests_word(db: Session = Depends(get_db), user=Depends(require_admin)):
     """Генерация отчета по квестам в Word с рейтингом и критериями оценки"""
     try:
-        # Получаем все активные квесты
         quests = crud.get_quests(db, skip=0, limit=1000, filters={})
 
-        # Получаем статистику по каждому квесту
         quest_stats = []
         total_quests_price = 0
 
         for quest in quests:
-            # Количество бронирований для этого квеста
             bookings_count = db.query(models.Booking).filter(
                 models.Booking.quest_id == quest.id
             ).count()
 
-            # Количество завершенных бронирований (прошедших)
             completed_bookings = db.query(models.Booking).filter(
                 models.Booking.quest_id == quest.id,
                 models.Booking.booking_date_time < datetime.now()
             ).count()
 
-            # Доход от этого квеста
             revenue = db.query(func.sum(models.Booking.total_price)).filter(
                 models.Booking.quest_id == quest.id
             ).scalar() or 0
 
-            # Средний рейтинг квеста
             avg_rating = get_quest_average_rating(db, quest.id)
 
-            # Количество отзывов
             reviews_count = db.query(models.Review).filter(
                 models.Review.quest_id == quest.id
             ).count()
 
-            # Процент заполняемости (если есть бронирования)
             fill_rate = 0
-            if bookings_count > 0:
-                # Предполагаем максимальную вместимость в день (2 слота в день * max_players)
-                max_capacity = quest.max_players * 2  # примерно
+            if bookings_count > 0 and quest.max_players:
+                max_capacity = quest.max_players * 2
                 fill_rate = min(100, int((bookings_count / max_capacity) * 100)) if max_capacity > 0 else 0
 
             quest_stats.append({
@@ -1052,19 +1004,16 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
 
         doc = Document()
 
-        # Настройка стилей
         style = doc.styles['Normal']
         font = style.font
         font.name = 'Arial'
         font.size = Pt(10)
 
-        # Создаем таблицу для шапки с логотипом
         header_table = doc.add_table(rows=1, cols=2)
         header_table.autofit = False
         header_table.columns[0].width = Inches(1.5)
         header_table.columns[1].width = Inches(4.5)
 
-        # Добавляем логотип в первую ячейку
         try:
             logo_path = "static/images/logo_black.png"
             if os.path.exists(logo_path):
@@ -1075,7 +1024,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
         except:
             pass
 
-        # Добавляем информацию во вторую ячейку
         info_cell = header_table.cell(0, 1)
         info_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         info_cell.paragraphs[0].add_run("Алиби\n").bold = True
@@ -1084,42 +1032,34 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
 
         doc.add_paragraph()
 
-        # Заголовок отчета
         report_title = doc.add_paragraph("ОТЧЕТ ПО КВЕСТАМ С РЕЙТИНГОМ И КРИТЕРИЯМИ ОЦЕНКИ")
         report_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         report_title.runs[0].bold = True
         report_title.runs[0].font.size = Pt(14)
 
-        # Дата формирования
         date_para = doc.add_paragraph(f"Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
         date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         doc.add_paragraph()
 
-        # Создаем таблицу с данными о квестах
         if quests:
-            # Таблица с основными данными (10 колонок)
             table = doc.add_table(rows=1, cols=10)
             table.style = 'Table Grid'
             table.autofit = False
 
-            # Устанавливаем ширину колонок
             col_widths = [0.5, 1.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
             for i, width in enumerate(col_widths):
                 table.columns[i].width = Inches(width)
 
-            # Заголовки таблицы
             headers = ['№', 'Название', 'Жанр', 'Сложность', 'Страх', 'Цена', 'Броней', 'Доход', 'Рейтинг', 'Отзывов']
             hdr_cells = table.rows[0].cells
             for i, header in enumerate(headers):
                 hdr_cells[i].text = header
                 hdr_cells[i].paragraphs[0].runs[0].bold = True
                 hdr_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # Заливаем фон заголовков
                 shading_elm = parse_xml(r'<w:shd {} w:fill="E6E6FA"/>'.format(nsdecls('w')))
                 hdr_cells[i]._tc.get_or_add_tcPr().append(shading_elm)
 
-            # Данные
             total_revenue = 0
             total_bookings = 0
             total_ratings_sum = 0
@@ -1152,7 +1092,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
                 row_cells[7].text = f"{stats['revenue']}₽"
                 row_cells[7].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-                # Рейтинг со звездочками
                 if stats['avg_rating']:
                     rating_text = f"{stats['avg_rating']} ★"
                     if stats['avg_rating'] >= 4.5:
@@ -1179,7 +1118,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
 
             doc.add_paragraph()
 
-            # Общая статистика
             avg_rating_all = round(total_ratings_sum / quests_with_rating, 1) if quests_with_rating > 0 else 0
 
             summary_para = doc.add_paragraph()
@@ -1194,7 +1132,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
             summary_para.add_run(f"СРЕДНИЙ РЕЙТИНГ ВСЕХ КВЕСТОВ: {avg_rating_all} ★\n").bold = True
             summary_para.add_run("═" * 60).bold = True
 
-            # Дополнительная статистика по жанрам
             doc.add_paragraph()
             genre_stats_title = doc.add_paragraph("Статистика по жанрам:")
             genre_stats_title.runs[0].bold = True
@@ -1241,12 +1178,10 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
 
             doc.add_paragraph()
 
-            # Таблица рейтинга квестов
             rating_title = doc.add_paragraph("РЕЙТИНГ КВЕСТОВ (ТОП-5):")
             rating_title.runs[0].bold = True
             rating_title.runs[0].font.size = Pt(12)
 
-            # Сортируем по рейтингу
             top_quests = sorted([s for s in quest_stats if s['avg_rating']],
                                 key=lambda x: x['avg_rating'], reverse=True)[:5]
 
@@ -1279,7 +1214,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
 
             doc.add_paragraph()
 
-            # Таблица популярности квестов (по количеству бронирований)
             popular_title = doc.add_paragraph("ПОПУЛЯРНОСТЬ КВЕСТОВ (ТОП-5):")
             popular_title.runs[0].bold = True
             popular_title.runs[0].font.size = Pt(12)
@@ -1321,18 +1255,15 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
         doc.add_paragraph()
         doc.add_paragraph()
 
-        # Создаем таблицу для подписи и печати
         footer_table = doc.add_table(rows=1, cols=2)
         footer_table.autofit = False
         footer_table.columns[0].width = Inches(4.0)
         footer_table.columns[1].width = Inches(2.0)
 
-        # Подпись в левой ячейке
         sign_cell = footer_table.cell(0, 0)
         sign_cell.paragraphs[0].add_run("_________________________\n")
         sign_cell.paragraphs[0].add_run("Подпись ответственного лица")
 
-        # Печать в правой ячейке
         try:
             stamp_path = "static/images/stamp.png"
             if os.path.exists(stamp_path):
@@ -1344,7 +1275,6 @@ async def report_quests_word(db: Session = Depends(get_db), user=Depends(require
         except:
             pass
 
-        # Сохраняем в буфер
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
@@ -1377,10 +1307,8 @@ async def get_quest_image(quest_id: int, db: Session = Depends(get_db)):
     if not quest:
         raise HTTPException(status_code=404, detail="Quest not found")
 
-    # Проверяем наличие изображения в БД
     if quest.image_data:
         try:
-            # Формат: data:image/png;base64,xxxxx
             header, encoded = quest.image_data.split(',', 1)
             mime_type = header.split(':')[1].split(';')[0]
             image_bytes = base64.b64decode(encoded)
@@ -1388,7 +1316,6 @@ async def get_quest_image(quest_id: int, db: Session = Depends(get_db)):
         except Exception as e:
             print(f"Error serving image from DB: {e}")
 
-    # Если нет в БД, пробуем загрузить из файла
     if quest.image_path:
         file_path = os.path.join("static", quest.image_path)
         if os.path.exists(file_path):
@@ -1402,6 +1329,7 @@ async def get_quest_image(quest_id: int, db: Session = Depends(get_db)):
 
     raise HTTPException(status_code=404, detail="Image not found")
 
+
 # --- API для проверки ---
 @app.get("/api/quest-has-bookings/{quest_id}")
 def api_quest_has_bookings(quest_id: int, db: Session = Depends(get_db)):
@@ -1411,11 +1339,11 @@ def api_quest_has_bookings(quest_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/quests")
 def api_get_quests(
-        request: Request,  # <-- Первый параметр
+        request: Request,
         skip: int = 0,
         q: Optional[str] = None,
-        genre: Optional[List[str]] = Query(None),  # <-- Важно: Query(None)
-        difficulty: Optional[List[str]] = Query(None),  # <-- Важно: Query(None)
+        genre: Optional[List[str]] = Query(None),
+        difficulty: Optional[List[str]] = Query(None),
         fear_level: Optional[str] = None,
         players: Optional[str] = None,
         sort: Optional[str] = None,
@@ -1423,6 +1351,7 @@ def api_get_quests(
 ):
     print(f"API DEBUG - genre: {genre}")
     print(f"API DEBUG - difficulty: {difficulty}")
+    print(f"API DEBUG - skip: {skip}")  # Добавьте для отладки
 
     filters = {
         "q": q,
@@ -1434,6 +1363,23 @@ def api_get_quests(
     }
     quests = crud.get_quests(db, skip=skip, limit=15, filters=filters)
     return templates.TemplateResponse("_quest_cards.html", {"request": request, "quests": quests})
+
+@app.get("/admin/test-optimization")
+def test_optimization(db: Session = Depends(get_db), user=Depends(require_admin)):
+    """Тестовый маршрут для проверки работы оптимизации"""
+    quests = crud.get_quests(db, filters={"q": "квест", "sort": "price_low"})
+    text_search = crud.search_quests_by_text(db, "загадки", 5)
+    stats = crud.get_quest_statistics(db)
+
+    return {
+        "status": "OK",
+        "optimization_active": True,
+        "quests_found": len(quests),
+        "text_search_results": len(text_search),
+        "statistics_available": len(stats) > 0,
+        "avg_rating_field_exists": hasattr(models.Quest, 'avg_rating')
+    }
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True)

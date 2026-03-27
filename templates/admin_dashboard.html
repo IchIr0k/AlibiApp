@@ -1,114 +1,104 @@
 {% extends "base.html" %}
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Панель администратора</h2>
+<div class="admin-container">
+    <div class="admin-header">
+        <h2>⚙️ Панель управления</h2>
+        <p class="admin-subtitle">Управление квестами и бронированиями</p>
+    </div>
 
-    <!-- Статистика -->
-    <div class="admin-stats">
-        <div class="stats-card">
-            <div class="stats-icon">🎮</div>
-            <div class="stats-info">
-                <div class="stats-number">{{ quests|length }}</div>
-                <div class="stats-label">Всего квестов</div>
+    <!-- Компактная статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🎮</div>
+            <div class="stat-info">
+                <div class="stat-number">{{ quests|length }}</div>
+                <div class="stat-label">всего квестов</div>
             </div>
         </div>
-        <div class="stats-card">
-            <div class="stats-icon">📅</div>
-            <div class="stats-info">
-                <div class="stats-number">{{ quest_bookings|length }}</div>
-                <div class="stats-label">Всего бронирований</div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+                <div class="stat-number">{{ quest_bookings|length }}</div>
+                <div class="stat-label">бронирований</div>
             </div>
         </div>
-        <div class="stats-card">
-            <div class="stats-icon">👥</div>
-            <div class="stats-info">
-                <div class="stats-number">{{ active_users_count }}</div>
-                <div class="stats-label">Активных пользователей</div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+                <div class="stat-number">{{ active_users_count }}</div>
+                <div class="stat-label">пользователей</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+                <div class="stat-number">{{ total_revenue }}</div>
+                <div class="stat-label">выручка, ₽</div>
             </div>
         </div>
     </div>
 
-    <div class="admin-controls">
-        <a href="/admin/add" class="btn">Добавить квест</a>
-        <a href="/admin/bookings" class="btn outline">Управление бронированиями</a>
-        <a href="/admin/report/quests" class="btn report-quests">📊 Скачать отчет по квестам</a>
-        <a href="/admin/report/word" class="btn outline">📄 Скачать отчет по бронированиям</a>
+    <div class="admin-actions-bar">
+        <a href="/admin/add" class="btn-primary">➕ Добавить квест</a>
+        <a href="/admin/bookings" class="btn-secondary">📋 Управление бронированиями</a>
+        <a href="/admin/report/quests" class="btn-report">📊 Отчет по квестам</a>
+        <a href="/admin/report/word" class="btn-report">📄 Отчет по броням</a>
     </div>
 
     {% if error %}
-    <div class="alert error">
+    <div class="alert-error">
         {{ error }}
-
         {% if blocked_quest_id and quest_bookings %}
-        <div style="margin-top: 15px; padding: 15px; background: #2a1a1a; border-radius: 6px;">
-            <strong>Активные бронирования для этого квеста:</strong>
-            <div style="margin-top: 10px;">
-                {% for booking in quest_bookings %}
-                <div style="padding: 8px; margin: 5px 0; background: #3a2a2a; border-radius: 4px;">
-                    📅 {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') if booking.booking_date_time else 'Дата не указана' }} -
-                    {{ booking.user.username if booking.user else 'Неизвестно' }}
-                    {% if booking.user and booking.user.email %}({{ booking.user.email }}){% endif %}
-                </div>
-                {% endfor %}
-            </div>
-
-            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}"
-                      onsubmit="return confirm('Вы уверены, что хотите удалить ВСЕ бронирования этого квеста?')">
-                    <button type="submit" class="btn danger small">Удалить все бронирования</button>
+        <div class="alert-details">
+            <strong>Активные бронирования:</strong>
+            {% for booking in quest_bookings %}
+            <div>📅 {{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }} - {{ booking.user.username if booking.user else 'Неизвестно' }}</div>
+            {% endfor %}
+            <div class="alert-actions">
+                <form method="post" action="/admin/delete-all-bookings/{{ blocked_quest_id }}" style="display:inline">
+                    <button class="btn-small btn-danger">Удалить все бронирования</button>
                 </form>
-
-                <form method="post" action="/admin/delete-quest-with-bookings/{{ blocked_quest_id }}"
-                      onsubmit="return confirm('ВНИМАНИЕ: Это удалит квест и ВСЕ его бронирования. Продолжить?')">
-                    <button type="submit" class="btn danger small">Удалить квест и бронирования</button>
+                <form method="post" action="/admin/delete-quest-with-bookings/{{ blocked_quest_id }}" style="display:inline">
+                    <button class="btn-small btn-warning">Удалить квест с бронями</button>
                 </form>
-
-                <a href="/admin/bookings?quest_id={{ blocked_quest_id }}" class="btn outline small">
-                    Управление бронированиями
-                </a>
             </div>
         </div>
         {% endif %}
     </div>
     {% endif %}
 
-    <div class="admin-list">
+    <div class="quests-list">
         {% for q in quests %}
-        <div class="admin-item {% if blocked_quest_id == q.id %}highlighted{% endif %}" id="quest-{{ q.id }}">
-            <div class="thumb">
+        <div class="quest-item {% if blocked_quest_id == q.id %}highlighted{% endif %}" id="quest-{{ q.id }}">
+            <div class="quest-thumb">
                 {% if q.image_data %}
                 <img src="/api/quest-image/{{ q.id }}" alt="{{ q.title }}">
                 {% elif q.image_path %}
                 <img src="/static/{{ q.image_path }}" alt="{{ q.title }}">
                 {% else %}
-                <div class="card-placeholder small">🕵️‍♂️</div>
+                <div class="thumb-placeholder">🎭</div>
                 {% endif %}
             </div>
-            <div class="info">
-                <h4>{{ q.title }}</h4>
-                <p class="meta">{{ q.genre }} • {{ q.difficulty }} • {{ q.min_players }}-{{ q.max_players }} чел.</p>
-                <div class="price-card">
-                    <span class="price">{{ q.price }}₽</span>
+            <div class="quest-info">
+                <div class="quest-title-row">
+                    <h3>{{ q.title }}</h3>
+                    {% if q.avg_rating and q.avg_rating > 0 %}
+                    <span class="rating-badge">★ {{ "%.1f"|format(q.avg_rating) }}</span>
+                    {% endif %}
                 </div>
-
-                {% set booking_count = 0 %}
-                {% for booking in quest_bookings if booking.quest_id == q.id %}
-                    {% set booking_count = booking_count + 1 %}
-                {% endfor %}
-
-                {% if booking_count > 0 %}
-                <div class="booking-badge">
-                    🗓️ {{ booking_count }} бронирований
+                <div class="quest-meta">
+                    <span class="meta-tag">{{ q.genre.split(', ')[0] }}</span>
+                    <span class="meta-tag">{{ q.difficulty }}</span>
+                    <span class="meta-tag">{{ q.min_players }}-{{ q.max_players }} чел.</span>
+                    <span class="meta-price">{{ q.price }}₽</span>
                 </div>
-                {% endif %}
-
-                <div class="actions">
-                    <a class="btn" href="/quest/{{ q.id }}">Просмотр</a>
-                    <a class="btn outline" href="/admin/edit/{{ q.id }}">Редактировать</a>
-                    <form style="display:inline" method="post" action="/admin/delete/{{ q.id }}"
+                <div class="quest-actions">
+                    <a href="/quest/{{ q.id }}" class="action-btn view">👁️ Просмотр</a>
+                    <a href="/admin/edit/{{ q.id }}" class="action-btn edit">✏️ Редактировать</a>
+                    <form method="post" action="/admin/delete/{{ q.id }}" style="display:inline"
                           onsubmit="return confirmDelete(this, '{{ q.title }}')">
-                        <button class="btn danger" type="submit">Удалить</button>
+                        <button class="action-btn delete">🗑️ Удалить</button>
                     </form>
                 </div>
             </div>
@@ -118,229 +108,319 @@
 </div>
 
 <style>
-.admin-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
 }
 
-.stats-card {
-    background: linear-gradient(135deg, var(--card), #1a2244);
-    border-radius: 12px;
+.admin-header {
+    margin-bottom: 32px;
+}
+
+.admin-header h2 {
+    font-size: 1.8em;
+    margin-bottom: 8px;
+}
+
+.admin-subtitle {
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--card), #1a1f3a);
+    border-radius: 20px;
     padding: 20px;
     display: flex;
     align-items: center;
-    gap: 15px;
-    border: 1px solid #39417b;
+    gap: 16px;
+    border: 1px solid rgba(68, 74, 247, 0.2);
     transition: all 0.3s;
 }
 
-.stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+.stat-card:hover {
+    transform: translateY(-3px);
     border-color: var(--accent);
 }
 
-.stats-icon {
-    font-size: 3em;
+.stat-icon {
+    font-size: 2.5em;
 }
 
-.stats-info {
-    flex: 1;
-}
-
-.stats-number {
-    font-size: 2em;
+.stat-number {
+    font-size: 1.8em;
     font-weight: bold;
     color: var(--accent);
     line-height: 1;
 }
 
-.stats-label {
+.stat-label {
     color: var(--muted);
-    font-size: 0.9em;
-    margin-top: 5px;
+    font-size: 0.8em;
+    margin-top: 4px;
 }
 
-.admin-controls {
+.admin-actions-bar {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.admin-controls .btn {
-    padding: 10px 16px;
+.btn-primary, .btn-secondary, .btn-report {
+    padding: 10px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s;
 }
 
-.btn.report-quests {
-    background: #28a745;
+.btn-primary {
+    background: linear-gradient(135deg, var(--btn), #5a64ff);
     color: white;
 }
 
-.btn.report-quests:hover {
-    background: #218838;
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #3a44e0, #4a54f5);
 }
 
-.admin-list {
+.btn-secondary {
+    background: rgba(68, 74, 247, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(68, 74, 247, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(68, 74, 247, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-report {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.btn-report:hover {
+    background: rgba(40, 167, 69, 0.3);
+    transform: translateY(-2px);
+}
+
+.quests-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.admin-item {
+.quest-item {
     display: flex;
-    gap: 12px;
-    align-items: center;
+    gap: 16px;
     background: var(--panel);
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #39417b;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(68, 74, 247, 0.2);
+    transition: all 0.3s;
 }
 
-.admin-item.highlighted {
+.quest-item:hover {
+    border-color: var(--accent);
+    transform: translateX(4px);
+}
+
+.quest-item.highlighted {
     border: 2px solid #ffc107;
     background: #1a2244;
 }
 
-.thumb img {
-    width: 100px;
-    height: 70px;
-    object-fit: cover;
-    border-radius: 6px;
+.quest-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
-.card-placeholder.small {
-    width: 100px;
-    height: 70px;
-    background: #0b122e;
-    border-radius: 6px;
+.quest-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(68, 74, 247, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2em;
-    color: #39417b;
 }
 
-.info {
+.quest-info {
     flex: 1;
 }
 
-.info h4 {
-    margin: 0 0 5px 0;
-    color: #e6e9fb;
-}
-
-.info .meta {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.9em;
-}
-
-.price-card {
-    background: rgba(70, 80, 245, 0.2);
-    padding: 4px 8px;
-    border-radius: 6px;
-    margin: 5px 0;
-    border: 1px solid #4650f5;
-    display: inline-block;
-}
-
-.price {
-    color: var(--accent);
-    font-weight: bold;
-    font-size: 1.1em;
-}
-
-.booking-badge {
-    background: #28a745;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    display: inline-block;
-    margin-left: 10px;
-}
-
-.actions {
-    margin-top: 8px;
+.quest-title-row {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
 }
 
-.btn {
-    background: var(--btn);
-    padding: 6px 12px;
-    border-radius: 6px;
-    color: white;
+.quest-title-row h3 {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.rating-badge {
+    background: rgba(255, 215, 0, 0.2);
+    color: gold;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.75em;
+}
+
+.quest-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.meta-tag {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    color: var(--muted);
+}
+
+.meta-price {
+    background: rgba(68, 74, 247, 0.2);
+    color: var(--accent);
+    font-weight: bold;
+}
+
+.quest-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
     text-decoration: none;
-    border: none;
+    font-size: 0.75em;
+    transition: all 0.3s;
     cursor: pointer;
-    font-size: 0.9em;
+    border: none;
+    background: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.btn:hover {
-    background: #3a44e0;
+.action-btn.view {
+    background: rgba(68, 74, 247, 0.2);
+    color: var(--accent);
 }
 
-.btn.outline {
-    background: transparent;
-    border: 1px solid #39417b;
-    color: #dfe6ff;
+.action-btn.edit {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
 }
 
-.btn.outline:hover {
-    background: rgba(255,255,255,0.1);
+.action-btn.delete {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
 }
 
-.btn.danger {
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-small {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-danger {
     background: #dc3545;
+    color: white;
 }
 
-.btn.danger:hover {
-    background: #c82333;
+.btn-warning {
+    background: #ffc107;
+    color: #1a1a2e;
 }
 
-.btn.small {
-    padding: 4px 8px;
-    font-size: 0.8em;
+.alert-error {
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 3px solid #dc3545;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 24px;
 }
 
-.alert.error {
-    background: #3a1a1a;
-    border: 1px solid #dc3545;
-    color: lightpink;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+.alert-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.alert-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
 }
 
 @media (max-width: 768px) {
-    .admin-stats {
-        grid-template-columns: 1fr;
+    .admin-container {
+        padding: 16px;
     }
 
-    .stats-card {
-        justify-content: center;
-        text-align: center;
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
     }
 
-    .admin-item {
+    .quest-item {
         flex-direction: column;
         text-align: center;
     }
 
-    .thumb img,
-    .card-placeholder.small {
-        width: 150px;
-        height: 100px;
+    .quest-thumb {
+        width: 100%;
+        height: 120px;
+        margin: 0 auto;
     }
 
-    .booking-badge {
-        display: inline-block;
-        margin: 5px 0;
+    .quest-title-row {
+        justify-content: center;
+    }
+
+    .quest-meta {
+        justify-content: center;
+    }
+
+    .quest-actions {
+        justify-content: center;
     }
 }
 </style>
@@ -348,40 +428,35 @@
 <script>
 async function confirmDelete(form, questTitle) {
     const questId = form.action.split('/').pop();
-
     try {
         const response = await fetch(`/api/quest-has-bookings/${questId}`);
         const result = await response.json();
-
         if (result.has_bookings) {
             const userChoice = confirm(
                 `Квест "${questTitle}" имеет активные бронирования.\n\n` +
-                `• Нажмите OK для просмотра подробностей и управления бронированиями\n` +
+                `• Нажмите OK для просмотра подробностей\n` +
                 `• Нажмите Отмена для отмены удаления`
             );
-
             if (userChoice) {
                 window.location.href = `/admin#quest-${questId}`;
             }
             return false;
         }
     } catch (error) {
-        console.error('Ошибка при проверке бронирований:', error);
+        console.error('Ошибка:', error);
     }
-
     return confirm(`Вы уверены, что хотите удалить квест "${questTitle}"?`);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Прокрутка к выделенному квесту
     const urlParams = new URLSearchParams(window.location.search);
     const highlight = urlParams.get('highlight');
-
     if (highlight) {
         const element = document.getElementById(`quest-${highlight}`);
         if (element) {
             setTimeout(() => {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.style.animation = 'pulse 0.5s ease';
             }, 100);
         }
     }

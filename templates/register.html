@@ -1,105 +1,420 @@
 {% extends "base.html" %}
 {% block title %}Регистрация{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Регистрация</h2>
-    {% if error %}
-    <div class="alert error">
-        {{ error }}
+<div class="auth-wrapper">
+  <div class="auth-container">
+    <div class="auth-left">
+      <div class="auth-decoration">
+        <div class="decoration-icon">🎭</div>
+        <h2>Станьте частью приключений!</h2>
+        <p>Создайте аккаунт и откройте мир захватывающих квестов. Бронируйте, участвуйте, оставляйте отзывы!</p>
+        <div class="decoration-features">
+          <div class="feature">✨ Персональные рекомендации</div>
+          <div class="feature">🎫 История бронирований</div>
+          <div class="feature">⭐ Бонусы за отзывы</div>
+        </div>
+      </div>
     </div>
-    {% endif %}
-    <form method="post" class="auth-form" autocomplete="off">
-        <label>
-            Логин*
-            <input type="text" name="username" required
-                   minlength="3" maxlength="50" placeholder="Минимум 3 символа"
-                   autocomplete="off">
-        </label>
+    <div class="auth-right">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h3>Создать аккаунт</h3>
+          <p>Заполните форму для регистрации</p>
+        </div>
 
-        <label>
-            Email*
-            <input type="email" name="email" required
+        {% if error %}
+        <div class="auth-error">
+          <span class="error-icon">⚠️</span>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" class="auth-form" autocomplete="off">
+          <div class="form-field">
+            <label for="username">
+              <span class="field-icon">👤</span>
+              <span>Логин</span>
+            </label>
+            <input type="text" name="username" id="username" required
+                   minlength="3" maxlength="50" placeholder="Минимум 3 символа" autocomplete="off">
+          </div>
+
+          <div class="form-field">
+            <label for="email">
+              <span class="field-icon">📧</span>
+              <span>Email</span>
+            </label>
+            <input type="email" name="email" id="email" required
                    placeholder="your@email.com" autocomplete="off">
-        </label>
+          </div>
 
-        <label>
-            Пароль*
-            <input type="password" name="password" required minlength="4"
-                   placeholder="Минимум 4 символа" autocomplete="new-password">
-        </label>
+          <div class="form-field">
+            <label for="password">
+              <span class="field-icon">🔒</span>
+              <span>Пароль</span>
+            </label>
+            <div class="password-field">
+              <input type="password" name="password" id="password" required
+                     minlength="4" placeholder="Минимум 4 символа" autocomplete="new-password">
+              <button type="button" class="toggle-password" onclick="togglePassword()">👁️</button>
+            </div>
+          </div>
 
-        <button type="submit" class="btn">Зарегистрироваться</button>
-    </form>
-    <p style="margin-top: 20px; text-align: center;">
-        Уже есть аккаунт? <a href="/login">Войти</a>
-    </p>
+          <div class="form-field">
+            <label for="confirm_password">
+              <span class="field-icon">✓</span>
+              <span>Подтверждение пароля</span>
+            </label>
+            <div class="password-field">
+              <input type="password" name="confirm_password" id="confirm_password" required
+                     placeholder="Повторите пароль" autocomplete="off">
+              <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">👁️</button>
+            </div>
+          </div>
+
+          <div class="form-checkbox">
+            <input type="checkbox" id="terms" required>
+            <label for="terms">
+              Я согласен с <a href="/terms" target="_blank">условиями использования</a> и
+              <a href="/privacy" target="_blank">политикой конфиденциальности</a>
+            </label>
+          </div>
+
+          <button type="submit" class="auth-submit">Зарегистрироваться →</button>
+        </form>
+
+        <div class="auth-footer">
+          <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-.auth-form {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
+.auth-wrapper {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0b1233 0%, #0f1a3a 100%);
 }
 
-.auth-form label {
-    display: block;
-    margin-bottom: 15px;
-    color: #e6e9fb;
+.auth-container {
+  display: flex;
+  max-width: 1100px;
+  width: 100%;
+  background: var(--card);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.auth-form input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 5px;
-    border: 1px solid #39417b;
-    border-radius: 8px;
-    background: #0b1330;
-    color: #e6e9fb;
-    box-sizing: border-box;
+.auth-left {
+  flex: 1;
+  background: linear-gradient(135deg, #1a1f3a, #121734);
+  padding: 48px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.auth-form input:focus {
-    border-color: #4CAF50;
-    outline: none;
+.decoration-icon {
+  font-size: 4em;
+  margin-bottom: 24px;
 }
 
-.alert.error {
-    background: #3a1a1a;
-    border: 1px solid #dc3545;
-    color: lightpink;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+.auth-left h2 {
+  font-size: 1.8em;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #e6e9fb, #a0a7e6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.container {
-    max-width: 500px;
+.auth-left p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.decoration-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature {
+  color: #e6e9fb;
+  font-size: 0.95em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-right {
+  flex: 1;
+  padding: 48px 40px;
+}
+
+.auth-card {
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-header h3 {
+  font-size: 1.8em;
+  margin-bottom: 8px;
+  color: #e6e9fb;
+}
+
+.auth-header p {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.auth-error {
+  background: rgba(220, 53, 69, 0.15);
+  border-left: 3px solid #dc3545;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+  color: #ffaaaa;
+}
+
+.error-icon {
+  font-size: 1.1em;
+}
+
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.field-icon {
+  font-size: 1em;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid #2a2f4e;
+  border-radius: 12px;
+  color: #e6e9fb;
+  font-size: 0.95em;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(68, 74, 247, 0.2);
+}
+
+.password-field {
+  position: relative;
+  width: 100%;
+}
+
+.password-field input {
+  width: 100%;
+  padding: 12px 48px 12px 16px;
+  background: var(--panel);
+  border: 1px solid #2a2f4e;
+  border-radius: 12px;
+  color: #e6e9fb;
+  font-size: 0.95em;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}
+
+.password-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(68, 74, 247, 0.2);
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1em;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:hover {
+  opacity: 1;
+}
+
+.form-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.form-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.form-checkbox label {
+  color: var(--muted);
+  font-size: 0.8em;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.form-checkbox a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.form-checkbox a:hover {
+  text-decoration: underline;
+}
+
+.auth-submit {
+  width: 100%;
+  background: linear-gradient(135deg, var(--btn), #5a64ff);
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  color: white;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 8px;
+}
+
+.auth-submit:hover {
+  background: linear-gradient(135deg, #3a44e0, #4a54f5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.auth-footer p {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.auth-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .auth-left {
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .decoration-features {
+    align-items: center;
+  }
+
+  .auth-right {
+    padding: 32px 24px;
+  }
+
+  .auth-card {
+    max-width: 100%;
+  }
 }
 </style>
 
 <script>
+function togglePassword() {
+  const passwordInput = document.getElementById('password');
+  const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+  passwordInput.setAttribute('type', type);
+}
+
+function toggleConfirmPassword() {
+  const confirmInput = document.getElementById('confirm_password');
+  const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+  confirmInput.setAttribute('type', type);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Очищаем все поля при загрузке страницы
-    const inputs = document.querySelectorAll('input');
-    inputs.forEach(input => {
-        input.value = '';
+  const inputs = document.querySelectorAll('input');
+  inputs.forEach(input => {
+    input.value = '';
+  });
+
+  const form = document.querySelector('.auth-form');
+  if (form) {
+    form.setAttribute('autocomplete', 'off');
+  }
+
+  const password = document.getElementById('password');
+  const confirmPassword = document.getElementById('confirm_password');
+
+  if (confirmPassword) {
+    confirmPassword.addEventListener('input', function() {
+      if (this.value === password.value && this.value !== '') {
+        this.style.borderColor = '#28a745';
+      } else if (this.value !== '') {
+        this.style.borderColor = '#dc3545';
+      } else {
+        this.style.borderColor = '#2a2f4e';
+      }
     });
-
-    // Отключаем автозаполнение для формы
-    const form = document.querySelector('.auth-form');
-    if (form) {
-        form.setAttribute('autocomplete', 'off');
-    }
-
-    // Дополнительная защита от автозаполнения
-    setTimeout(() => {
-        inputs.forEach(input => {
-            if (input.value !== '') {
-                input.value = '';
-            }
-        });
-    }, 100);
+  }
 });
 </script>
 {% endblock %}

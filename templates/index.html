@@ -1,146 +1,323 @@
 {% extends "base.html" %}
-{% block title %}Квесты{% endblock %}
+{% block title %}Каталог квестов{% endblock %}
 {% block content %}
 <div class="layout">
   <!-- Фильтры -->
   <aside class="filters">
+    <div class="filters-header">
+      <h3>🔍 Фильтры</h3>
+      <button type="button" id="reset-filters" class="reset-btn">Сбросить</button>
+    </div>
     <form id="filter-form">
-      <h3>Жанры</h3>
-      <label><input type="checkbox" name="genre" value="детям"> Детям</label>
-      <label><input type="checkbox" name="genre" value="страшные"> Страшные</label>
-      <label><input type="checkbox" name="genre" value="веселые"> Весёлые</label>
-      <label><input type="checkbox" name="genre" value="с актерами"> С актёрами</label>
-      <label><input type="checkbox" name="genre" value="без актеров"> Без актёров</label>
-      <label><input type="checkbox" name="genre" value="нестрашные"> Нестрашные</label>
-      <label><input type="checkbox" name="genre" value="загадки"> Загадки</label>
-
-      <h3>Сложность</h3>
-      <label><input type="checkbox" name="difficulty" value="легкий"> Лёгкий</label>
-      <label><input type="checkbox" name="difficulty" value="нормальный"> Нормальный</label>
-      <label><input type="checkbox" name="difficulty" value="сложный"> Сложный</label>
-      <label><input type="checkbox" name="difficulty" value="экстремальный"> Экстремальный</label>
-
-      <h3>Уровень страха</h3>
-      <div id="fear-level" class="stars">
-        <span data-value="1">★</span>
-        <span data-value="2">★</span>
-        <span data-value="3">★</span>
-        <span data-value="4">★</span>
-        <span data-value="5">★</span>
+      <div class="filter-section">
+        <h4>🎭 Жанры</h4>
+        <div class="filter-options">
+          <label><input type="checkbox" name="genre" value="детям"> Детям</label>
+          <label><input type="checkbox" name="genre" value="страшные"> Страшные</label>
+          <label><input type="checkbox" name="genre" value="веселые"> Весёлые</label>
+          <label><input type="checkbox" name="genre" value="с актерами"> С актёрами</label>
+          <label><input type="checkbox" name="genre" value="без актеров"> Без актёров</label>
+          <label><input type="checkbox" name="genre" value="нестрашные"> Нестрашные</label>
+          <label><input type="checkbox" name="genre" value="загадки"> Загадки</label>
+        </div>
       </div>
-      <input type="hidden" name="fear_level" id="fear_input">
 
-      <h3>Количество игроков</h3>
-      <div id="players" class="players-selector">
-        <span data-value="1">○</span>
-        <span data-value="2">○</span>
-        <span data-value="3">○</span>
-        <span data-value="4">○</span>
-        <span data-value="5">○</span>
-        <span data-value="6">○</span>
+      <div class="filter-section">
+        <h4>⚡ Сложность</h4>
+        <div class="filter-options">
+          <label><input type="checkbox" name="difficulty" value="легкий"> Лёгкий</label>
+          <label><input type="checkbox" name="difficulty" value="нормальный"> Нормальный</label>
+          <label><input type="checkbox" name="difficulty" value="сложный"> Сложный</label>
+          <label><input type="checkbox" name="difficulty" value="экстремальный"> Экстремальный</label>
+        </div>
       </div>
-      <input type="hidden" name="players" id="players_input">
 
-      <button type="button" id="apply-filters" class="btn" style="width:100%;margin-top:16px;">Применить фильтры</button>
+      <div class="filter-section">
+        <h4>😱 Уровень страха</h4>
+        <div id="fear-level" class="stars-selector">
+          <span data-value="1">★</span>
+          <span data-value="2">★</span>
+          <span data-value="3">★</span>
+          <span data-value="4">★</span>
+          <span data-value="5">★</span>
+        </div>
+        <input type="hidden" name="fear_level" id="fear_input">
+      </div>
+
+      <div class="filter-section">
+        <h4>👥 Количество игроков</h4>
+        <div id="players" class="players-selector">
+          <span data-value="1">1</span>
+          <span data-value="2">2</span>
+          <span data-value="3">3</span>
+          <span data-value="4">4</span>
+          <span data-value="5">5</span>
+          <span data-value="6">6</span>
+        </div>
+        <input type="hidden" name="players" id="players_input">
+      </div>
+
+      <button type="button" id="apply-filters" class="apply-btn">Применить фильтры</button>
     </form>
   </aside>
 
   <!-- Основной контент -->
   <main class="main-col">
     <div class="catalog-header">
-      <h2>Каталог квестов</h2>
-
-      <!-- Статистика для пользователя -->
-      {% if user %}
-      <div class="user-stats">
-        <div class="stats-badge">
-          <span class="stats-icon">🎮</span>
-          <span class="stats-text">Всего квестов: {{ total_quests }}</span>
+      <div class="header-top">
+        <h2>Каталог квестов</h2>
+        {% if user %}
+        <div class="quick-stats">
+          <div class="stat-chip">
+            <span class="stat-icon">🎮</span>
+            <span class="stat-value">{{ total_quests }}</span>
+            <span class="stat-label">квестов</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-icon">📅</span>
+            <span class="stat-value">{{ user_bookings_count }}</span>
+            <span class="stat-label">броней</span>
+          </div>
         </div>
-        <div class="stats-badge">
-          <span class="stats-icon">📅</span>
-          <span class="stats-text">Мои бронирования: {{ user_bookings_count }}</span>
-        </div>
+        {% endif %}
       </div>
-      {% endif %}
 
       <div class="catalog-controls">
-        <!-- Сортировка -->
         <div class="sort-container">
-          <label for="sort-select">Сортировка:</label>
+          <label for="sort-select">Сортировать по:</label>
           <select id="sort-select" name="sort" class="sort-select">
-            <option value="title_asc" {% if request.query_params.get('sort') == 'title_asc' %}selected{% endif %}>От А до Я</option>
-            <option value="title_desc" {% if request.query_params.get('sort') == 'title_desc' %}selected{% endif %}>От Я до А</option>
-            <option value="price_low" {% if request.query_params.get('sort') == 'price_low' %}selected{% endif %}>Сначала дешевые</option>
-            <option value="price_high" {% if request.query_params.get('sort') == 'price_high' %}selected{% endif %}>Сначала дорогие</option>
+            <option value="title_asc" {% if request.query_params.get('sort') == 'title_asc' %}selected{% endif %}>Названию (А-Я)</option>
+            <option value="title_desc" {% if request.query_params.get('sort') == 'title_desc' %}selected{% endif %}>Названию (Я-А)</option>
+            <option value="price_low" {% if request.query_params.get('sort') == 'price_low' %}selected{% endif %}>Цене (сначала дешевые)</option>
+            <option value="price_high" {% if request.query_params.get('sort') == 'price_high' %}selected{% endif %}>Цене (сначала дорогие)</option>
+            <option value="rating_desc" {% if request.query_params.get('sort') == 'rating_desc' %}selected{% endif %}>Рейтингу (сначала высокий)</option>
+            <option value="rating_asc" {% if request.query_params.get('sort') == 'rating_asc' %}selected{% endif %}>Рейтингу (сначала низкий)</option>
           </select>
         </div>
 
-        <!-- Кнопки управления (только для админа) -->
         {% if user and user.is_admin %}
-        <div class="admin-controls">
-          <a href="/admin/add" class="btn">Добавить квест</a>
-          <a href="/admin" class="btn outline">Редактировать квесты</a>
+        <div class="admin-actions">
+          <a href="/admin/add" class="btn-add">+ Добавить квест</a>
+          <a href="/admin" class="btn-edit">✏️ Редактировать</a>
         </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Сетка квестов -->
     <div id="quests-grid">
       {% include "_quest_cards.html" %}
     </div>
 
-    <!-- Кнопка "Посмотреть ещё" -->
-    {% if quests|length == 15 %}
-    <div class="load-more-wrap">
-      <button id="load-more" class="btn outline" data-skip="15">Посмотреть ещё</button>
+    <div class="load-more-wrap" id="load-more-wrap" style="display: {% if quests|length == 15 %}flex{% else %}none{% endif %};">
+      <button id="load-more" class="load-more-btn">Показать ещё <span class="arrow">→</span></button>
     </div>
-    {% endif %}
   </main>
 </div>
 
 <style>
-.user-stats {
+.layout {
     display: flex;
-    gap: 15px;
-    margin: 15px 0;
-    flex-wrap: wrap;
+    gap: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px;
 }
 
-.stats-badge {
-    background: var(--card);
-    border: 1px solid #4650f5;
-    border-radius: 12px;
-    padding: 10px 20px;
-    display: inline-flex;
+.filters {
+    width: 280px;
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 20px;
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+    border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    transition: all 0.3s;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(68, 74, 247, 0.2);
 }
 
-.stats-badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
-    border-color: var(--accent);
-}
-
-.stats-icon {
-    font-size: 1.5em;
-}
-
-.stats-text {
-    font-size: 0.95em;
-    font-weight: 500;
+.filters-header h3 {
+    margin: 0;
+    font-size: 1.1em;
     color: #e6e9fb;
 }
 
+.reset-btn {
+    background: transparent;
+    border: 1px solid #39417b;
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.75em;
+    transition: all 0.3s;
+}
+
+.reset-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--accent);
+    color: #e6e9fb;
+}
+
+.filter-section {
+    margin-bottom: 24px;
+}
+
+.filter-section h4 {
+    font-size: 0.85em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #b0b6e6;
+    font-size: 0.9em;
+}
+
+.filter-options input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.stars-selector {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.stars-selector span {
+    font-size: 22px;
+    cursor: pointer;
+    color: #555;
+    transition: color 0.2s;
+}
+
+.stars-selector span:hover,
+.stars-selector span.active {
+    color: gold;
+}
+
+.players-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.players-selector span {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+    color: var(--muted);
+}
+
+.players-selector span:hover {
+    background: rgba(68, 74, 247, 0.3);
+    color: white;
+}
+
+.players-selector span.active {
+    background: var(--accent);
+    color: white;
+}
+
+.apply-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--btn), #5a64ff);
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 16px;
+}
+
+.apply-btn:hover {
+    background: linear-gradient(135deg, #3a44e0, #4a54f5);
+    transform: translateY(-2px);
+}
+
+.main-col {
+    flex: 1;
+    min-width: 0;
+}
+
 .catalog-header {
+    margin-bottom: 24px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 20px;
 }
 
 .catalog-header h2 {
-    margin-bottom: 10px;
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.quick-stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat-chip {
+    background: rgba(68, 74, 247, 0.1);
+    border-radius: 30px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.stat-icon {
+    font-size: 1.1em;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 0.8em;
 }
 
 .catalog-controls {
@@ -148,179 +325,329 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(68, 74, 247, 0.2);
+}
+
+.sort-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sort-container label {
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+.sort-select {
+    background: var(--panel);
+    border: 1px solid #2a2f4e;
+    color: #e6e9fb;
+    padding: 8px 16px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s;
+}
+
+.sort-select:hover {
+    border-color: var(--accent);
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.btn-add, .btn-edit {
+    padding: 8px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-add {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.btn-add:hover {
+    background: linear-gradient(135deg, #218838, #1aa179);
+    transform: translateY(-2px);
+}
+
+.btn-edit {
+    background: rgba(68, 74, 247, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(68, 74, 247, 0.3);
+}
+
+.btn-edit:hover {
+    background: rgba(68, 74, 247, 0.3);
+    transform: translateY(-2px);
+}
+
+.load-more-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.load-more-btn {
+    background: transparent;
+    border: 1px solid #39417b;
+    padding: 12px 32px;
+    border-radius: 40px;
+    color: #e6e9fb;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.95em;
+}
+
+.load-more-btn:hover {
+    background: rgba(68, 74, 247, 0.2);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.load-more-btn .arrow {
+    transition: transform 0.3s;
+    display: inline-block;
+}
+
+.load-more-btn:hover .arrow {
+    transform: translateX(4px);
 }
 
 @media (max-width: 768px) {
-    .user-stats {
-        justify-content: center;
+    .layout {
+        flex-direction: column;
+        padding: 16px;
     }
 
-    .stats-badge {
+    .filters {
+        width: 100%;
+        position: static;
+    }
+
+    .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .quick-stats {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .stat-chip {
         flex: 1;
         justify-content: center;
-    }
-
-    .catalog-controls {
-        flex-direction: column;
-        align-items: stretch;
     }
 }
 </style>
 
 <script>
-// Инициализация фильтров при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-    // Звезды рейтинга страха
+    let isLoading = false;
+
+    const loadBtn = document.getElementById("load-more");
+    const loadMoreWrap = document.getElementById("load-more-wrap");
+
+    if (loadBtn) {
+        loadBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+
+            if (isLoading) return;
+
+            const btn = loadBtn;
+            isLoading = true;
+
+            // Получаем текущее количество квестов на странице
+            const currentCount = document.querySelectorAll('.card').length;
+
+            const params = new URLSearchParams(window.location.search);
+            params.set("skip", currentCount);
+
+            const url = "/api/quests?" + params.toString();
+            btn.disabled = true;
+            btn.innerHTML = "Загрузка...";
+
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const html = await res.text();
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const newGrid = tempDiv.querySelector('.cards-grid');
+
+                    const cardsGrid = document.querySelector(".cards-grid");
+                    if (newGrid && cardsGrid) {
+                        const existingIds = new Set();
+                        document.querySelectorAll('.card').forEach(card => {
+                            const link = card.querySelector('.btn-primary');
+                            if (link) {
+                                const href = link.getAttribute('href');
+                                const match = href.match(/\/quest\/(\d+)/);
+                                if (match) existingIds.add(parseInt(match[1]));
+                            }
+                        });
+
+                        const newCards = newGrid.querySelectorAll('.card');
+                        let addedCount = 0;
+                        const cardsToAdd = [];
+
+                        newCards.forEach(newCard => {
+                            const link = newCard.querySelector('.btn-primary');
+                            if (link) {
+                                const href = link.getAttribute('href');
+                                const match = href.match(/\/quest\/(\d+)/);
+                                if (match) {
+                                    const questId = parseInt(match[1]);
+                                    if (!existingIds.has(questId)) {
+                                        cardsToAdd.push(newCard.cloneNode(true));
+                                        addedCount++;
+                                        existingIds.add(questId);
+                                    }
+                                }
+                            }
+                        });
+
+                        cardsToAdd.forEach(card => {
+                            cardsGrid.appendChild(card);
+                        });
+
+                        if (addedCount < 15) {
+                            loadMoreWrap.style.display = 'none';
+                        } else {
+                            btn.innerHTML = "Показать ещё <span class='arrow'>→</span>";
+                            btn.disabled = false;
+                        }
+                    } else {
+                        loadMoreWrap.style.display = 'none';
+                    }
+                } else {
+                    btn.innerHTML = "Ошибка загрузки";
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                btn.innerHTML = "Ошибка";
+                btn.disabled = false;
+                console.error('Load more error:', error);
+            } finally {
+                isLoading = false;
+            }
+        });
+    }
+
+    // Фильтры и сортировка
     const fearStars = document.querySelectorAll("#fear-level span");
     const fearInput = document.getElementById("fear_input");
+    const playerCircles = document.querySelectorAll("#players span");
+    const playersInput = document.getElementById("players_input");
+    const sortSelect = document.getElementById('sort-select');
+    const applyBtn = document.getElementById("apply-filters");
+    const resetBtn = document.getElementById("reset-filters");
 
     fearStars.forEach(star => {
         star.addEventListener("click", function() {
             const value = this.getAttribute("data-value");
             fearInput.value = value;
-
-            // Обновляем визуальное отображение
             fearStars.forEach(s => {
                 if (s.getAttribute("data-value") <= value) {
-                    s.style.color = "gold";
-                    s.textContent = "★";
+                    s.classList.add('active');
                 } else {
-                    s.style.color = "gray";
-                    s.textContent = "☆";
+                    s.classList.remove('active');
                 }
             });
         });
     });
-
-    // Круги количества игроков
-    const playerCircles = document.querySelectorAll("#players span");
-    const playersInput = document.getElementById("players_input");
 
     playerCircles.forEach(circle => {
         circle.addEventListener("click", function() {
             const value = this.getAttribute("data-value");
             playersInput.value = value;
-
-            // Обновляем визуальное отображение
             playerCircles.forEach(c => {
                 if (c.getAttribute("data-value") <= value) {
-                    c.style.color = "#4CAF50";
-                    c.textContent = "●";
+                    c.classList.add('active');
                 } else {
-                    c.style.color = "gray";
-                    c.textContent = "○";
+                    c.classList.remove('active');
                 }
             });
         });
     });
 
-    // Применение фильтров - ИСПРАВЛЕНО: передаем все выбранные значения как списки
-    const applyBtn = document.getElementById("apply-filters");
     if (applyBtn) {
         applyBtn.addEventListener("click", function() {
             const form = document.getElementById("filter-form");
             const data = new FormData(form);
             const params = new URLSearchParams();
 
-            // Собираем все значения из FormData правильно
-            // Используем getAll для получения всех значений с одинаковым именем
             const genreValues = data.getAll("genre");
             const difficultyValues = data.getAll("difficulty");
             const fearLevel = data.get("fear_level");
             const players = data.get("players");
 
-            // Добавляем жанры (каждый как отдельный параметр genre)
-            genreValues.forEach(genre => {
-                if (genre) {
-                    params.append("genre", genre);
-                }
-            });
+            genreValues.forEach(genre => { if (genre) params.append("genre", genre); });
+            difficultyValues.forEach(difficulty => { if (difficulty) params.append("difficulty", difficulty); });
+            if (fearLevel) params.append("fear_level", fearLevel);
+            if (players) params.append("players", players);
+            if (sortSelect && sortSelect.value) params.append("sort", sortSelect.value);
 
-            // Добавляем сложность (каждый как отдельный параметр difficulty)
-            difficultyValues.forEach(difficulty => {
-                if (difficulty) {
-                    params.append("difficulty", difficulty);
-                }
-            });
-
-            // Добавляем уровень страха
-            if (fearLevel) {
-                params.append("fear_level", fearLevel);
-            }
-
-            // Добавляем количество игроков
-            if (players) {
-                params.append("players", players);
-            }
-
-            // Добавляем сортировку если есть
-            const sortSelect = document.getElementById('sort-select');
-            if (sortSelect && sortSelect.value) {
-                params.append("sort", sortSelect.value);
-            }
-
-            // Переходим на отфильтрованную страницу
             window.location.href = "/?" + params.toString();
         });
     }
 
-    // Сортировка
-    const sortSelect = document.getElementById('sort-select');
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function() {
+            window.location.href = "/";
+        });
+    }
+
     if (sortSelect) {
         sortSelect.addEventListener('change', function() {
             const url = new URL(window.location);
-            // Сохраняем все существующие параметры
             const existingParams = new URLSearchParams(url.search);
             existingParams.set('sort', this.value);
             window.location.href = "/?" + existingParams.toString();
         });
     }
 
-    // Инициализация из URL параметров - ИСПРАВЛЕНО!
     function initFromURL() {
         const urlParams = new URLSearchParams(window.location.search);
 
-        // Уровень страха
         const fearLevel = urlParams.get('fear_level');
         if (fearLevel && fearInput) {
             fearInput.value = fearLevel;
             fearStars.forEach((star, index) => {
-                if (index < fearLevel) {
-                    star.style.color = "gold";
-                    star.textContent = "★";
-                }
+                if (index < fearLevel) star.classList.add('active');
             });
         }
 
-        // Количество игроков
         const players = urlParams.get('players');
         if (players && playersInput) {
             playersInput.value = players;
             playerCircles.forEach((circle, index) => {
-                if (index < players) {
-                    circle.style.color = "#4CAF50";
-                    circle.textContent = "●";
-                }
+                if (index < players) circle.classList.add('active');
             });
         }
 
-        // Чекбоксы жанров - получаем ВСЕ значения genre
         const allGenres = urlParams.getAll('genre');
         allGenres.forEach(genre => {
             const checkbox = document.querySelector(`input[name="genre"][value="${genre}"]`);
             if (checkbox) checkbox.checked = true;
         });
 
-        // Чекбоксы сложности - получаем ВСЕ значения difficulty
         const allDifficulties = urlParams.getAll('difficulty');
         allDifficulties.forEach(difficulty => {
             const checkbox = document.querySelector(`input[name="difficulty"][value="${difficulty}"]`);
             if (checkbox) checkbox.checked = true;
         });
 
-        // Сортировка
         const sort = urlParams.get('sort');
         if (sort && sortSelect) {
             sortSelect.value = sort;

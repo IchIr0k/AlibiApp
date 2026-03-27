@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, Date, Time
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, Date, Time, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -17,11 +17,8 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_login = Column(DateTime(timezone=True))
 
-    # Relationships
     bookings = relationship("Booking", back_populates="user")
     reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="user")
-    audit_logs = relationship("AuditLog", back_populates="user")
 
 
 class Quest(Base):
@@ -38,13 +35,13 @@ class Quest(Base):
     max_players = Column(Integer, nullable=False, default=6)
     address = Column(String(255), nullable=False, default="Адрес не указан")
     image_path = Column(String(255))
-    image_data = Column(Text)  # Добавлено поле для хранения base64 изображения
+    image_data = Column(Text)
     price = Column(Integer, default=2000)
     is_active = Column(Boolean, default=True)
+    avg_rating = Column(Numeric(3, 1), default=None)  # Добавлено поле
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
     schedules = relationship("Schedule", back_populates="quest", cascade="all, delete-orphan")
     bookings = relationship("Booking", back_populates="quest")
     reviews = relationship("Review", back_populates="quest", cascade="all, delete-orphan")
@@ -119,67 +116,6 @@ class Review(Base):
     comment = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
     quest = relationship("Quest", back_populates="reviews")
     user = relationship("User", back_populates="reviews")
     booking = relationship("Booking", back_populates="review")
-
-
-class QuestReview(Base):
-    __tablename__ = "quest_reviews"
-
-    id = Column(Integer, primary_key=True, index=True)
-    quest_id = Column(Integer, ForeignKey("quests.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
-    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="SET NULL"), unique=True)
-
-    rating = Column(Integer, nullable=False)
-    review_text = Column(Text)
-    difficulty_rating = Column(Integer)
-    fear_rating = Column(Integer)
-    is_approved = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    quest = relationship("Quest", back_populates="reviews_old")
-    user = relationship("User", back_populates="reviews_old")
-    booking = relationship("Booking", back_populates="review_old")
-
-
-class AuditLog(Base):
-    __tablename__ = "audit_log"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
-    action_type = Column(String(50), nullable=False)
-    table_name = Column(String(100), nullable=False)
-    record_id = Column(Integer)
-    old_values = Column(Text)
-    new_values = Column(Text)
-    ip_address = Column(String(45))
-    user_agent = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    user = relationship("User", back_populates="audit_logs")
-
-
-class Notification(Base):
-    __tablename__ = "notifications"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    notification_type = Column(String(50), nullable=False)
-    title = Column(String(200), nullable=False)
-    message = Column(Text, nullable=False)
-    is_read = Column(Boolean, default=False)
-    related_entity_type = Column(String(50))
-    related_entity_id = Column(Integer)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    user = relationship("User", back_populates="notifications")
-
-
-# Добавляем недостающие relationship в Quest и User
-Quest.reviews_old = relationship("QuestReview", back_populates="quest", cascade="all, delete-orphan")
-User.reviews_old = relationship("QuestReview", back_populates="user", cascade="all, delete-orphan")
-Booking.review_old = relationship("QuestReview", back_populates="booking", uselist=False)
