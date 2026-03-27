@@ -71,8 +71,8 @@ def get_quest(db: Session, quest_id: int):
 
 
 def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot: str,
-                   payment_method: str, prepayment: int = None):
-    """Создание бронирования"""
+                   payment_method: str, participants_count: int = 2, prepayment: int = None):
+    """Создание бронирования с указанием количества участников"""
     try:
         booking_datetime = datetime.strptime(f"{date} {timeslot}", "%Y-%m-%d %H:%M")
         booking_date = booking_datetime.date()
@@ -83,6 +83,11 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
 
         if not user or not quest:
             print(f"User or quest not found: user={user_id}, quest={quest_id}")
+            return None
+
+        # Проверяем, что количество участников не превышает максимальное
+        if participants_count < quest.min_players or participants_count > quest.max_players:
+            print(f"Invalid participants count: {participants_count} (min={quest.min_players}, max={quest.max_players})")
             return None
 
         schedule = db.query(models.Schedule).filter(
@@ -99,15 +104,15 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
                 schedule_date=booking_date,
                 start_time=booking_time,
                 end_time=end_time,
-                max_slots=2,
+                max_slots=6,  # Максимум слотов (можно сделать настраиваемым)
                 booked_slots=0,
                 is_available=True
             )
             db.add(schedule)
             db.flush()
 
-        if schedule.booked_slots >= schedule.max_slots:
-            print(f"Слот занят: booked_slots={schedule.booked_slots}, max_slots={schedule.max_slots}")
+        if schedule.booked_slots + participants_count > schedule.max_slots:
+            print(f"Slot full: booked_slots={schedule.booked_slots}, participants={participants_count}, max_slots={schedule.max_slots}")
             return None
 
         if prepayment is None:
@@ -119,7 +124,7 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
             schedule_id=schedule.id,
             status_id=1,
             booking_date_time=booking_datetime,
-            participants_count=2,
+            participants_count=participants_count,
             total_price=quest.price,
             prepayment=prepayment,
             payment_method=payment_method,
@@ -130,7 +135,7 @@ def create_booking(db: Session, user_id: int, quest_id: int, date: str, timeslot
         )
 
         db.add(booking)
-        schedule.booked_slots += 2
+        schedule.booked_slots += participants_count
 
         db.commit()
         db.refresh(booking)

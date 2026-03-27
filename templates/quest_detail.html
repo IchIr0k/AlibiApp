@@ -140,6 +140,15 @@
           </div>
 
           <div class="form-group">
+            <label>Количество участников: от {{ quest.min_players }} до {{ quest.max_players }}</label>
+            <select name="participants_count" id="participants_count" class="form-select" required>
+              {% for i in range(quest.min_players, quest.max_players + 1) %}
+              <option value="{{ i }}">{{ i }} {{ 'человек' if i in [2,3,4] else 'человек' }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
             <label>Способ оплаты предоплаты</label>
             <div class="payment-options">
               <label class="payment-option">
@@ -196,6 +205,42 @@
 </div>
 
 <style>
+/* Стили как в оригинале, добавляем стили для select */
+.booking-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid #2a2f4e;
+  border-radius: 10px;
+  color: #e6e9fb;
+  font-size: 0.9em;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Остальные стили такие же как в оригинале */
 .quest-detail-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -487,23 +532,6 @@
   gap: 20px;
   margin-bottom: 20px;
   flex-wrap: wrap;
-}
-
-.booking-col {
-  flex: 1;
-  min-width: 0;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 0.85em;
-  font-weight: 500;
 }
 
 .date-input {
@@ -900,6 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
           resultDiv.innerHTML = `
             <div class="success-message">
               ✅ ${result.message}<br>
+              👥 Количество участников: ${result.participants_count}<br>
               💰 Сумма предоплаты: ${result.prepayment}₽<br>
               📝 Способ оплаты: ${paymentMethodText}<br>
               <small>Оставшуюся сумму ${result.total_price - result.prepayment}₽ оплатите на месте</small>

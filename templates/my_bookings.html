@@ -56,7 +56,7 @@
             <span class="info-icon">👥</span>
             <div class="info-content">
               <span class="info-label">Количество игроков</span>
-              <span class="info-value">{{ booking.quest.min_players }}-{{ booking.quest.max_players }} чел.</span>
+              <span class="info-value">{{ booking.participants_count }} чел.</span>
             </div>
           </div>
           <div class="info-item">
@@ -163,7 +163,7 @@
   {% endif %}
 </div>
 
-<!-- Модальные окна -->
+<!-- Модальные окна (остаются без изменений) -->
 <div id="payModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">💳 Внесение предоплаты</div>
@@ -197,6 +197,7 @@
 </div>
 
 <style>
+/* Все стили остаются без изменений */
 .bookings-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -491,7 +492,6 @@
   box-shadow: 0 4px 12px rgba(68, 74, 247, 0.3);
 }
 
-/* Модальные окна */
 .modal {
   display: none;
   position: fixed;

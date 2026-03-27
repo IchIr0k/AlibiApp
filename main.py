@@ -175,7 +175,7 @@ def get_available_slots(quest_id: int, date: str, db: Session = Depends(get_db))
 @app.post("/book")
 def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
          timeslot: str = Form(...), payment_method: str = Form(...),
-         db: Session = Depends(get_db)):
+         participants_count: int = Form(2), db: Session = Depends(get_db)):
     try:
         user = get_current_user(request, db)
 
@@ -184,6 +184,10 @@ def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
 
         if payment_method not in ['card', 'sbp']:
             return JSONResponse({"success": False, "message": "Недопустимый способ оплаты"}, status_code=400)
+
+        # Проверяем, что количество участников указано
+        if participants_count < 1:
+            return JSONResponse({"success": False, "message": "Укажите количество участников"}, status_code=400)
 
         booking_datetime = datetime.strptime(f"{date} {timeslot}", "%Y-%m-%d %H:%M")
         current_time = naive_now()
@@ -197,7 +201,8 @@ def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
 
         booking = crud.create_booking(db, user_id=user.id, quest_id=quest_id,
                                       date=date, timeslot=timeslot,
-                                      payment_method=payment_method)
+                                      payment_method=payment_method,
+                                      participants_count=participants_count)
         if not booking:
             return JSONResponse({"success": False, "message": "Слот уже занят или произошла ошибка"}, status_code=400)
 
@@ -207,7 +212,8 @@ def book(request: Request, quest_id: int = Form(...), date: str = Form(...),
             "booking_id": booking.id,
             "prepayment": booking.prepayment,
             "total_price": booking.total_price,
-            "payment_method": payment_method
+            "payment_method": payment_method,
+            "participants_count": participants_count
         })
     except HTTPException:
         return JSONResponse({"success": False, "message": "Необходимо авторизоваться"}, status_code=401)
@@ -1351,7 +1357,7 @@ def api_get_quests(
 ):
     print(f"API DEBUG - genre: {genre}")
     print(f"API DEBUG - difficulty: {difficulty}")
-    print(f"API DEBUG - skip: {skip}")  # Добавьте для отладки
+    print(f"API DEBUG - skip: {skip}")
 
     filters = {
         "q": q,
@@ -1363,22 +1369,6 @@ def api_get_quests(
     }
     quests = crud.get_quests(db, skip=skip, limit=15, filters=filters)
     return templates.TemplateResponse("_quest_cards.html", {"request": request, "quests": quests})
-
-@app.get("/admin/test-optimization")
-def test_optimization(db: Session = Depends(get_db), user=Depends(require_admin)):
-    """Тестовый маршрут для проверки работы оптимизации"""
-    quests = crud.get_quests(db, filters={"q": "квест", "sort": "price_low"})
-    text_search = crud.search_quests_by_text(db, "загадки", 5)
-    stats = crud.get_quest_statistics(db)
-
-    return {
-        "status": "OK",
-        "optimization_active": True,
-        "quests_found": len(quests),
-        "text_search_results": len(text_search),
-        "statistics_available": len(stats) > 0,
-        "avg_rating_field_exists": hasattr(models.Quest, 'avg_rating')
-    }
 
 
 if __name__ == "__main__":

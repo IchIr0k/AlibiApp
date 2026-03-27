@@ -56,7 +56,12 @@
             <div class="password-field">
               <input type="password" name="password" id="password" required
                      minlength="4" placeholder="Минимум 4 символа" autocomplete="new-password">
-              <button type="button" class="toggle-password" onclick="togglePassword()">👁️</button>
+              <button type="button" class="toggle-password" onclick="togglePassword()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -68,16 +73,13 @@
             <div class="password-field">
               <input type="password" name="confirm_password" id="confirm_password" required
                      placeholder="Повторите пароль" autocomplete="off">
-              <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">👁️</button>
+              <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </button>
             </div>
-          </div>
-
-          <div class="form-checkbox">
-            <input type="checkbox" id="terms" required>
-            <label for="terms">
-              Я согласен с <a href="/terms" target="_blank">условиями использования</a> и
-              <a href="/privacy" target="_blank">политикой конфиденциальности</a>
-            </label>
           </div>
 
           <button type="submit" class="auth-submit">Зарегистрироваться →</button>
@@ -265,50 +267,24 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.1em;
-  opacity: 0.6;
-  transition: opacity 0.3s;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  transition: all 0.3s;
+  color: #b0b6e6;
 }
 
 .toggle-password:hover {
-  opacity: 1;
+  background: rgba(68, 74, 247, 0.2);
+  color: #e6e9fb;
 }
 
-.form-checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.form-checkbox input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  cursor: pointer;
-  accent-color: var(--accent);
-}
-
-.form-checkbox label {
-  color: var(--muted);
-  font-size: 0.8em;
-  line-height: 1.4;
-  cursor: pointer;
-}
-
-.form-checkbox a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.form-checkbox a:hover {
-  text-decoration: underline;
+.toggle-password svg {
+  stroke: currentColor;
 }
 
 .auth-submit {
@@ -382,12 +358,40 @@ function togglePassword() {
   const passwordInput = document.getElementById('password');
   const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
   passwordInput.setAttribute('type', type);
+
+  const toggleBtn = document.querySelector('#password').closest('.password-field').querySelector('.toggle-password');
+  if (type === 'text') {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M3 3L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  } else {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  }
 }
 
 function toggleConfirmPassword() {
   const confirmInput = document.getElementById('confirm_password');
   const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
   confirmInput.setAttribute('type', type);
+
+  const toggleBtn = document.querySelector('#confirm_password').closest('.password-field').querySelector('.toggle-password');
+  if (type === 'text') {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M3 3L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  } else {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

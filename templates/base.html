@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="/static/app.js" defer></script>
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
   <header class="topbar">
@@ -15,29 +16,29 @@
           <span class="site-title">Алиби</span>
       </div>
       <nav>
-          <a href="/" class="nav-link">🎮 Все квесты</a>
+          <a href="/" class="nav-link"> Все квесты</a>
           {% if user %}
-              <a href="/my-bookings" class="nav-link">📅 Мои бронирования</a>
+              <a href="/my-bookings" class="nav-link"> Мои бронирования</a>
           {% endif %}
       </nav>
       <div class="search">
           <form id="search-form" action="/" method="get">
               <input name="q" placeholder="Поиск квеста..." value="{{ request.query_params.get('q','') }}">
-              <button type="submit" class="search-btn">🔍 Найти</button>
+              <button type="submit" class="search-btn"> Найти</button>
           </form>
       </div>
       <div class="user-nav">
           {% if user %}
               {% if user.is_admin %}
-                  <span class="admin-badge">👑 Админ</span>
+                  <span class="admin-badge"> Админ</span>
                   <a href="/admin" class="nav-link">⚙️ Панель</a>
               {% else %}
-                  <span class="user-greeting">👋 {{ user.username }}</span>
+                  <span class="user-greeting"> {{ user.username }}</span>
               {% endif %}
-              <a href="/logout" class="nav-link logout">🚪 Выйти</a>
+              <a href="/logout" class="nav-link logout"> Выйти</a>
           {% else %}
-              <a href="/login" class="nav-link">🔑 Войти</a>
-              <a href="/register" class="nav-link register">📝 Регистрация</a>
+              <a href="/login" class="nav-link"> Войти</a>
+              <a href="/register" class="nav-link register"> Регистрация</a>
           {% endif %}
       </div>
   </header>
@@ -55,7 +56,7 @@
         </div>
         <div class="footer-contacts">
           <p>📍 г. Москва, ул. Квестовая, д. 88</p>
-          <p>📧 <a href="mailto:alibi.quest@mail.ru">alibi.quest@mail.ru</a></p>
+          <p>📧 alibi.quest@mail.ru</p>
         </div>
       </div>
       <div class="footer-copyright">
@@ -216,15 +217,6 @@
     margin: 6px 0;
     color: var(--muted);
     font-size: 0.9em;
-}
-
-.footer-contacts a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.footer-contacts a:hover {
-    text-decoration: underline;
 }
 
 .footer-copyright {

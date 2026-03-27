@@ -45,7 +45,12 @@
             </label>
             <div class="password-field">
               <input type="password" name="password" id="password" required placeholder="Введите ваш пароль" autocomplete="new-password">
-              <button type="button" class="toggle-password" onclick="togglePassword()">👁️</button>
+              <button type="button" class="toggle-password" onclick="togglePassword()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -234,19 +239,24 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.1em;
-  opacity: 0.6;
-  transition: opacity 0.3s;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  transition: all 0.3s;
+  color: #b0b6e6;
 }
 
 .toggle-password:hover {
-  opacity: 1;
+  background: rgba(68, 74, 247, 0.2);
+  color: #e6e9fb;
+}
+
+.toggle-password svg {
+  stroke: currentColor;
 }
 
 .auth-submit {
@@ -320,6 +330,21 @@ function togglePassword() {
   const passwordInput = document.getElementById('password');
   const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
   passwordInput.setAttribute('type', type);
+
+  // Меняем иконку в зависимости от состояния
+  const toggleBtn = document.querySelector('.toggle-password');
+  if (type === 'text') {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M3 3L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  } else {
+    toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
