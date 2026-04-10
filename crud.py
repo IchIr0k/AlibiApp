@@ -179,9 +179,13 @@ def get_all_bookings(db: Session):
 
 
 def get_quest_statistics(db: Session):
-    """Получение статистики по квестам"""
-    result = db.execute(text("SELECT * FROM quest_statistics"))
-    return result.fetchall()
+    """Получение статистики по квестам из представления"""
+    try:
+        result = db.execute(text("SELECT * FROM quest_statistics ORDER BY total_bookings DESC"))
+        return result.fetchall()
+    except Exception as e:
+        print(f"Error in get_quest_statistics: {e}")
+        return []
 
 
 def search_quests_by_text(db: Session, search_text: str, limit: int = 10):

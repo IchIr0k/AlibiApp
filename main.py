@@ -306,23 +306,34 @@ def logout(request: Request):
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db), user=Depends(require_admin)):
     try:
+        # Получаем все квесты
         quests = crud.get_quests(db, skip=0, limit=1000, filters={})
-        all_bookings = crud.get_all_bookings(db)
-        stats = crud.get_quest_statistics(db)
 
-        total_quests = len(quests)
-        total_bookings = sum(s.total_bookings for s in stats) if stats else 0
-        total_revenue = sum(s.total_revenue for s in stats) if stats else 0
+        # Получаем все бронирования
+        all_bookings = crud.get_all_bookings(db)
+
+        # Считаем статистику напрямую из базы данных для надежности
+        total_quests = db.query(models.Quest).filter(models.Quest.is_active == True).count()
+        total_bookings = db.query(models.Booking).count()
+        total_revenue = db.query(func.sum(models.Booking.total_price)).filter(
+            models.Booking.payment_status == 'prepayment_paid'
+        ).scalar() or 0
         active_users_count = db.query(models.User).filter(models.User.is_active == True).count()
 
+        # Статистика по квестам (для детальной информации)
+        stats = crud.get_quest_statistics(db)
+
     except Exception as e:
+        print(f"Admin error: {e}")
+        import traceback
+        traceback.print_exc()
         quests = []
         all_bookings = []
         active_users_count = 0
         total_quests = 0
         total_bookings = 0
         total_revenue = 0
-        print(f"Admin error: {e}")
+        stats = []
 
     return templates.TemplateResponse("admin_dashboard.html", {
         "request": request,
@@ -333,7 +344,8 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db), user=Depend
         "active_users_count": active_users_count,
         "total_quests": total_quests,
         "total_bookings": total_bookings,
-        "total_revenue": total_revenue
+        "total_revenue": total_revenue,
+        "stats": stats
     })
 
 
@@ -498,16 +510,48 @@ def admin_bookings(request: Request, quest_id: Optional[int] = None, db: Session
         else:
             bookings = crud.get_all_bookings(db)
         quests = crud.get_quests(db, skip=0, limit=1000, filters={})
+
+        # Подготавливаем данные для шаблона
+        current_time = naive_now()
+        bookings_data = []
+        active_count = 0
+
+        for booking in bookings:
+            # Преобразуем дату бронирования в naive datetime
+            booking_time = booking.booking_date_time
+            if hasattr(booking_time, 'tzinfo') and booking_time.tzinfo:
+                booking_time_naive = booking_time.replace(tzinfo=None)
+            else:
+                booking_time_naive = booking_time
+
+            # Определяем активность
+            is_active = booking_time_naive >= current_time
+
+            if is_active:
+                active_count += 1
+
+            bookings_data.append({
+                'booking': booking,
+                'is_active': is_active,
+                'booking_time_naive': booking_time_naive
+            })
+
     except Exception as e:
+        print(f"Bookings error: {e}")
         bookings = []
         quests = []
-        print(f"Bookings error: {e}")
+        bookings_data = []
+        active_count = 0
 
     return templates.TemplateResponse("admin_bookings.html", {
         "request": request,
         "bookings": bookings,
+        "bookings_data": bookings_data,
         "quests": quests,
         "user": user,
+        "total_count": len(bookings),
+        "active_count": active_count,
+        "completed_count": len(bookings) - active_count,
         "now": naive_now
     })
 

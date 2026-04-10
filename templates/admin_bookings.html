@@ -30,58 +30,55 @@
     <div class="bookings-table-container">
       <table class="bookings-table">
         <thead>
-          <tr>
+           <tr>
             <th>🎭 Квест</th>
             <th>👤 Пользователь</th>
             <th>📧 Email</th>
             <th>📅 Дата и время</th>
             <th>✅ Статус</th>
             <th>⚙️ Действия</th>
-          </tr>
+           </tr>
         </thead>
         <tbody>
-          {% for booking in bookings %}
-          {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
-          {% set current_time = now() %}
-          {% set is_past = booking_time < current_time %}
-          <tr class="booking-row {% if is_past %}past-booking{% endif %}">
+          {% for item in bookings_data %}
+          <tr class="booking-row {% if not item.is_active %}past-booking{% endif %}">
             <td class="quest-cell">
               <div class="quest-info-cell">
                 <span class="quest-icon">🎭</span>
-                <span class="quest-title">{{ booking.quest.title }}</span>
+                <span class="quest-title">{{ item.booking.quest.title }}</span>
               </div>
             </td>
             <td class="user-cell">
               <div class="user-info">
                 <span class="user-avatar">👤</span>
-                <span class="username">{{ booking.user.username if booking.user else 'Неизвестно' }}</span>
+                <span class="username">{{ item.booking.user.username if item.booking.user else 'Неизвестно' }}</span>
               </div>
             </td>
             <td class="email-cell">
-              <span class="email-text">{{ booking.user.email if booking.user and booking.user.email else 'Не указан' }}</span>
-             </td>
+              <span class="email-text">{{ item.booking.user.email if item.booking.user and item.booking.user.email else 'Не указан' }}</span>
+            </td>
             <td class="date-cell">
               <div class="date-info">
                 <span class="date-icon">📅</span>
-                <span class="date-text">{{ booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</span>
+                <span class="date-text">{{ item.booking.booking_date_time.strftime('%d.%m.%Y %H:%M') }}</span>
               </div>
-             </td>
+            </td>
             <td class="status-cell">
-              {% if is_past %}
-              <span class="status-badge completed">✅ Завершено</span>
-              {% else %}
+              {% if item.is_active %}
               <span class="status-badge active">🟢 Активно</span>
+              {% else %}
+              <span class="status-badge completed">✅ Завершено</span>
               {% endif %}
-             </td>
+            </td>
             <td class="actions-cell">
-              <form method="post" action="/admin/delete-booking/{{ booking.id }}" style="display: inline;">
+              <form method="post" action="/admin/delete-booking/{{ item.booking.id }}" style="display: inline;">
                 <button type="submit" class="delete-booking-btn" onclick="return confirm('Вы уверены, что хотите удалить это бронирование?')">
                   <span class="btn-icon">🗑️</span>
                   Удалить
                 </button>
               </form>
-             </td>
-           </tr>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -89,16 +86,9 @@
 
     <div class="stats-footer">
       <div class="footer-stats">
-        <span class="stat-badge">📊 Всего: {{ bookings|length }}</span>
-        {% set active_count = 0 %}
-        {% for booking in bookings %}
-          {% set booking_time = booking.booking_date_time.replace(tzinfo=None) %}
-          {% if booking_time >= now() %}
-            {% set active_count = active_count + 1 %}
-          {% endif %}
-        {% endfor %}
+        <span class="stat-badge">📊 Всего: {{ total_count }}</span>
         <span class="stat-badge active">🟢 Активных: {{ active_count }}</span>
-        <span class="stat-badge completed">✅ Завершённых: {{ bookings|length - active_count }}</span>
+        <span class="stat-badge completed">✅ Завершённых: {{ completed_count }}</span>
       </div>
     </div>
 
