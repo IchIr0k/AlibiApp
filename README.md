@@ -41,7 +41,7 @@
 ## 📦 Установка и запуск
 
 ### 1. Подготовка окружения
-Убедитесь, что у вас установлен Python 3.10+ и PostgreSQL.
+Убедитесь, что у вас установлен Python 3.12 и PostgreSQL.
 
 ```bash
 # Клонировать репозиторий
@@ -62,7 +62,8 @@ pip install fastapi uvicorn sqlalchemy psycopg2-binary jinja2 python-docx python
 ### 3. Настройка базы данных
 
 1. Создайте БД в PostgreSQL с названием Quest_site_kur.
-2. В файле database.py проверьте логин и пароль к БД.
+2. Импортируйте файл backupkurlast.sql
+3. В файле database.py измените логин и пароль к БД.
 
 ### 4. Запуск сервера
 
@@ -74,6 +75,7 @@ python main.py
 ---
 
 Разработчик: Крючкова Оксана
+---
 Год: 2026
 
    
