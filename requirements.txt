@@ -1,15 +1,23 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-jinja2
-python-multipart
-passlib[bcrypt]
-pydantic
-itsdangerous
-bcrypt==3.2.2
-psycopg==3.1.18
+# Основной фреймворк 
+fastapi==0.99.1
+starlette==0.27.0
+uvicorn==0.22.0
+
+# Работа с базой данных
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Шаблоны и веб-инструменты
+jinja2==3.1.2
 python-multipart==0.0.6
-openpyxl==3.1.2
-reportlab==4.0.6
-python-docx==1.1.0
+itsdangerous==2.1.2
+
+# Безопасность и пароли
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Генерация документов Word
+python-docx==1.1.0
+
+# Почта и прочее
+emails==0.6
