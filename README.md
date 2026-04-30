@@ -51,7 +51,29 @@ cd AlibiApp
 # Создать и активировать виртуальное окружение
 python -m venv venv
 venv\Scripts\activate
-
-
+```
 
 ### 2. Установка зависимостей
+
+```bash
+pip install fastapi uvicorn sqlalchemy psycopg2-binary jinja2 python-docx python-multipart
+```
+
+### 3. Настройка базы данных
+
+1. Создайте БД в PostgreSQL с названием Quest_site_kur.
+2. В файле database.py проверьте логин и пароль к БД.
+
+### 4. Запуск сервера
+
+```bash
+python main.py
+```
+Приложение будет доступно по адресу: http://127.0.0.1:5000
+
+---
+
+Разработчик: Крючкова Оксана
+Год: 2026
+
+   
