@@ -45,7 +45,7 @@
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/твой-логин/AlibiApp.git
+[git clone https://github.com/IchIr0k/AlibiApp.git]
 cd AlibiApp
 
 # Создать и активировать виртуальное окружение
@@ -56,7 +56,7 @@ venv\Scripts\activate
 ### 2. Установка зависимостей
 
 ```bash
-pip install fastapi uvicorn sqlalchemy psycopg2-binary jinja2 python-docx python-multipart
+pip install -r requirements.txt
 ```
 
 ### 3. Настройка базы данных
